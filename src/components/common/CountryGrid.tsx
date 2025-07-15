@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Country, fetchCountriesWithPlans } from '../services/esimApi';
+import { Country, fetchCountriesWithPlans } from '../../services/esimApi';
 import countriesLib from 'i18n-iso-countries';
 import enLocale from 'i18n-iso-countries/langs/en.json';
 

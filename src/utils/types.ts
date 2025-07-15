@@ -20,13 +20,15 @@ export interface StrapiEntity<T> {
 }
 
 export interface StrapiUserAttributes {
-  id: number;
+  id: string | number; // Support both string (Supabase) and number (Strapi) IDs
   username: string;
   email: string;
-  confirmed: boolean;
-  blocked: boolean;
-  createdAt: string;
-  updatedAt: string;
+  confirmed?: boolean;
+  blocked?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  created_at?: string; // Supabase format
+  updated_at?: string; // Supabase format
 }
 
 export type StrapiUser = StrapiEntity<StrapiUserAttributes>;
@@ -158,13 +160,6 @@ export interface TravelAccessory {
   images?: StrapiImage[];
 }
 
-export interface ApplicationSubmissionAttributes {
-  type: string;
-  status: string;
-  tracking_id: string;
-  data: any;
-}
-
 export interface InternationalDrivingLicenseApplicationAttributes {
   fullName: string;
   email: string;
@@ -177,14 +172,31 @@ export interface InternationalDrivingLicenseApplicationAttributes {
 export type InternationalDrivingLicenseApplication = StrapiEntity<InternationalDrivingLicenseApplicationAttributes>;
 
 export interface ApplicationSubmissionAttributes {
-  type: string;
-  status: string;
-  tracking_id: string;
-  data: any;
-  created_at: string;
-  updated_at: string;
-  full_name: string;
-  nationality: string; 
+  type?: string;
+  status?: string;
+  tracking_id?: string;
+  trackingId?: string; // Alternative naming
+  data?: any;
+  created_at?: string;
+  updated_at?: string;
+  createdAt?: string; // Alternative naming
+  updatedAt?: string; // Alternative naming
+  full_name?: string;
+  fullName?: string; // Alternative naming
+  nationality?: string;
+  email?: string;
+  paymentStatus?: 'pending' | 'completed' | 'failed';
+  payment_status?: 'pending' | 'completed' | 'failed'; // Alternative naming
+  applicationData?: any;
+  application_data?: any; // Alternative naming
+  filesUrls?: string[];
+  files_urls?: string[]; // Alternative naming
+  licenseFrontUrl?: string;
+  license_front_url?: string; // Alternative naming
+  passportPageUrl?: string;
+  passport_page_url?: string; // Alternative naming
+  personalPhotoUrl?: string;
+  personal_photo_url?: string; // Alternative naming
 }
 
 export type ApplicationSubmission = StrapiEntity<ApplicationSubmissionAttributes>;
@@ -221,3 +233,4 @@ export interface CartItem {
   product_details?: ProductDetails;
   image_url?: string;
 }
+

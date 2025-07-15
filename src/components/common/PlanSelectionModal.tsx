@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Country, EsimPlan } from '../services/esimApi';
+import { Country, EsimPlan } from '../../services/esimApi';
 
 interface PlanSelectionModalProps {
   country: Country | null;

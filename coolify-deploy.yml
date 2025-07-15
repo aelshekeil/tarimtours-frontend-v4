@@ -1,0 +1,31 @@
+# Coolify deployment configuration for Tarim Tours Frontend
+# This file should be placed in your repository root
+
+version: '3.8'
+
+services:
+  tarimtours-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_SUPABASE_URL: https://vrvrhzseqnjpriqesgoj.supabase.co
+        VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZydnJoenNlcW5qcHJpcWVzZ29qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNjA4OTAsImV4cCI6MjA2NzczNjg5MH0.1D9ES2hGCgC8726b9HNiPNoQF1SYxHYjTezUGshMFNM
+        VITE_TRIPCOM_API_KEY: ${VITE_TRIPCOM_API_KEY}
+        VITE_TRIPCOM_API_URL: ${VITE_TRIPCOM_API_URL}
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    labels:
+      - "coolify.managed=true"
+      - "coolify.type=application"
+      - "coolify.name=tarimtours-frontend"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+

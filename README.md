@@ -1,216 +1,105 @@
-# Tarim Tours Frontend
+# Tarim Tours Frontend - Supabase Migration (v4)
 
-A modern, responsive React frontend for tarimtours.com built with TypeScript, Tailwind CSS, and designed to work seamlessly with Strapi CMS as the backend.
+This repository contains the frontend for Tarim Tours, migrated from Strapi to Supabase with a hybrid approach, preparing for future microservices.
 
-## Features
+## Project Overview
 
-- **Modern React with TypeScript**: Type-safe development with excellent developer experience
-- **Responsive Design**: Mobile-first design that works on all devices
-- **Strapi Integration**: Ready-to-use API service layer for Strapi CMS
-- **Authentication**: User login/registration with JWT tokens
-- **Form Handling**: Advanced form components with file uploads
-- **Application Tracking**: Real-time application status tracking
-- **Travel Services**: Complete travel and business service platform
+This project aims to provide a modern, scalable, and future-ready frontend for Tarim Tours, leveraging Supabase for content management, authentication, and real-time features, while laying the groundwork for custom microservices.
 
-## Services Included
+## Key Features
 
-1. **Visa Services**: E-Visa and Transit Visa applications with document uploads
-2. **International Driving License**: Worldwide driving permit applications
-3. **Business Incorporation**: Company registration in multiple countries
-4. **Travel Packages**: Curated travel experiences with booking system
-5. **eSIM Sales**: Global connectivity solutions
-6. **Application Tracking**: Real-time status tracking for all services
-
-## Tech Stack
-
-- **React 18** with TypeScript
-- **Tailwind CSS** for styling
-- **Lucide React** for icons
-- **Vite** for build tooling
-- **Custom hooks** for API interactions
-- **Strapi API integration** ready
+- **Modern, Scalable Architecture**: Transitioned from Strapi to Supabase for a robust backend-as-a-service.
+- **Future-Ready for Microservices**: Designed with a service layer that can integrate with both Supabase and future custom microservices.
+- **Optimized for VPS and Coolify**: Includes Docker and Coolify deployment configurations.
+- **Real-time Capabilities**: Utilizes Supabase subscriptions for real-time updates (e.g., booking status).
+- **Proper Security**: Implemented Row Level Security (RLS) policies and Supabase Auth for secure data access.
+- **Performance Optimization**: Includes database indexing and caching strategies.
 
 ## Project Structure
 
 ```
 src/
-├── components/          # React components
-│   ├── Header.tsx      # Navigation with auth
-│   ├── Hero.tsx        # Landing section
-│   ├── Services.tsx    # Services overview
-│   ├── TravelPackages.tsx  # Travel packages display
-│   ├── VisaApplicationForm.tsx  # Visa application form
-│   ├── ApplicationTracking.tsx  # Status tracking
-│   ├── AuthModal.tsx   # Login/register modal
-│   └── Footer.tsx      # Site footer
-├── hooks/              # Custom React hooks
-│   └── useAPI.ts       # API interaction hooks
-├── lib/                # Utilities and services
-│   ├── api.ts          # Strapi API service
-│   ├── types.ts        # TypeScript interfaces
-│   └── utils.ts        # Helper functions
-├── App.tsx             # Main application
-├── App.css             # Custom styles
-└── main.tsx            # Application entry point
+├── components/
+│   ├── ui/           # Reusable UI components (e.g., Shadcn UI)
+│   ├── forms/        # Form-related components
+│   ├── layout/       # Application layout components
+│   └── features/     # Components specific to certain features (e.g., booking, visa)
+├── lib/
+│   ├── supabase.ts   # Supabase client initialization
+│   ├── api.ts        # Centralized API functions (now routing to SupabaseAPI)
+│   ├── types.ts      # Global TypeScript type definitions
+│   └── utils.ts      # General utility functions
+├── hooks/
+│   ├── useAuth.ts    # Custom hook for authentication logic
+│   ├── useSupabase.ts # Custom hooks for Supabase interactions (if any specific)
+│   └── useApi.ts     # Custom hook for API calls
+├── store/
+│   └── authStore.ts  # State management for authentication (e.g., Zustand, Jotai)
+├── pages/            # Main page components (e.g., Home, Shop, Profile)
+└── constants/        # Application-wide constants and configurations
 ```
 
-## Environment Variables
+## Migration Summary
 
-Create a `.env` file in the root directory:
+The migration involved several key phases:
 
-```env
-VITE_API_URL=https://your-strapi-backend.com
-```
+1.  **Repository Analysis**: Reviewed existing Strapi-dependent code to understand data flow and API interactions.
+2.  **Supabase Database Schema Setup**: Created new tables in Supabase mirroring Strapi content types (`travel_packages`, `esim_products`, `travel_accessories`, `visa_applications`, `international_driving_license_applications`, `trip_com_bookings`, `trip_com_search_logs`).
+3.  **Authentication & Security Configuration**: Replaced Strapi authentication with Supabase Auth and implemented comprehensive Row Level Security (RLS) policies across all tables, including adding `user_id` columns for user-specific data.
+4.  **Frontend Code Update**: Modified the frontend to use the Supabase client for all data operations, including authentication, data fetching, and form submissions. The `api.ts` file was updated to route calls to the new `supabaseAPI.ts`.
+5.  **File Storage & Trip.com Integration**: Configured Supabase Storage for file uploads (buckets: `applications`, `uploads`) and developed a `TripComIntegrationService` to handle hotel searches and bookings, including real-time updates via Supabase subscriptions.
+6.  **Deployment Configuration & Testing**: Updated Dockerfile, created `docker-compose.yml` for local development, and provided `coolify-deploy.yml` for easy deployment to Coolify. The project successfully builds for production.
 
 ## Getting Started
 
-1. **Install dependencies**:
-   ```bash
-   npm install
-   # or
-   pnpm install
-   ```
+### Prerequisites
 
-2. **Set up environment variables**:
-   - Copy `.env.example` to `.env`
-   - Update `VITE_API_URL` with your Strapi backend URL
+-   Node.js (v20 or higher)
+-   npm or pnpm
+-   Supabase project with configured database and storage buckets
 
-3. **Start development server**:
-   ```bash
-   npm run dev
-   # or
-   pnpm run dev
-   ```
+### Local Development
 
-4. **Build for production**:
-   ```bash
-   npm run build
-   # or
-   pnpm run build
-   ```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/aelshekeil/tarimtours-frontend-v4.git
+    cd tarimtours-frontend-v4
+    ```
 
-## Strapi Backend Requirements
+2.  **Install dependencies:**
+    ```bash
+    npm install # or pnpm install
+    ```
 
-This frontend expects the following Strapi content types:
+3.  **Configure environment variables:**
+    Copy the `.env.example` file to `.env` and update it with your Supabase project URL and Anon Key:
+    ```bash
+    cp .env.example .env
+    ```
+    Edit `.env`:
+    ```env
+    VITE_SUPABASE_URL=https://your-supabase-project-id.supabase.co
+    VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+    VITE_TRIPCOM_API_KEY=your_tripcom_api_key_here # Optional
+    VITE_TRIPCOM_API_URL=https://api.trip.com/v1 # Optional
+    ```
 
-### Content Types
+4.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
+    The application will be available at `http://localhost:5173`.
 
-1. **Travel Package** (`travel-package`)
-   - title (Text)
-   - description (Rich Text)
-   - destination (Text)
-   - price (Number)
-   - duration (Text)
-   - rating (Number)
-   - featured (Boolean)
-   - cover_image (Media)
+### Production Deployment
 
-2. **Visa Application** (`visa-application`)
-   - fullName (Text)
-   - email (Email)
-   - phone (Text)
-   - country (Text)
-   - visaType (Text)
-   - passportNumber (Text)
-   - travelDate (Date)
-   - tracking_id (Text)
-   - status (Enumeration: pending, processing, approved, rejected)
-   - documents (Media - Multiple)
+Refer to the `DEPLOYMENT_GUIDE.md` file for detailed instructions on deploying to Docker, Coolify, or a manual VPS setup.
 
-3. **Driving License Application** (`driving-license-application`)
-   - Similar structure to visa applications
+## Future Considerations (Phase 2)
 
-4. **Business Incorporation** (`business-incorporation`)
-   - Similar structure with business-specific fields
+This setup is designed to be hybrid, allowing for a gradual transition to custom microservices. In the future, you can:
 
-### API Endpoints
+-   **Keep Supabase for Content Management**: Continue using Supabase for static content, user authentication, and file storage.
+-   **Develop Custom Microservices**: Build dedicated services for complex logic like booking, payment, and advanced integrations, connecting them to the frontend as needed.
 
-The frontend expects these Strapi API endpoints:
-
-- `GET /api/travel-packages` - Fetch travel packages
-- `POST /api/visa-applications` - Submit visa application
-- `POST /api/driving-license-applications` - Submit driving license application
-- `POST /api/business-incorporations` - Submit business incorporation
-- `GET /api/{type}-applications?filters[tracking_id][$eq]={id}` - Track applications
-- `POST /api/auth/local` - User login
-- `POST /api/auth/local/register` - User registration
-- `POST /api/upload` - File uploads
-
-## Deployment
-
-### Frontend Deployment (Coolify)
-
-1. **Push to GitHub**:
-   ```bash
-   git add .
-   git commit -m "Ready for deployment"
-   git push origin main
-   ```
-
-2. **Deploy in Coolify**:
-   - Create new service
-   - Connect GitHub repository
-   - Set build command: `npm run build`
-   - Set environment variables
-   - Deploy
-
-### Environment Variables for Production
-
-```env
-VITE_API_URL=https://api.tarimtours.com
-```
-
-## API Integration
-
-The frontend uses a centralized API service (`src/lib/api.ts`) that handles:
-
-- Authentication with JWT tokens
-- Content fetching from Strapi
-- Form submissions with file uploads
-- Application tracking
-- Error handling
-
-### Example Usage
-
-```typescript
-import strapiAPI from '../lib/api';
-
-// Fetch travel packages
-const packages = await strapiAPI.getTravelPackages(true); // featured only
-
-// Submit visa application
-const result = await strapiAPI.submitVisaApplication(formData, files);
-
-// Track application
-const status = await strapiAPI.trackApplication(trackingId, 'visa');
-```
-
-## Customization
-
-### Styling
-
-- Modify `src/App.css` for custom styles
-- Update Tailwind classes in components
-- Colors and spacing defined in CSS custom properties
-
-### Adding New Services
-
-1. Create new form component in `src/components/`
-2. Add API method in `src/lib/api.ts`
-3. Update types in `src/lib/types.ts`
-4. Add to main App component
-
-### Branding
-
-- Update logo and colors in `src/components/Header.tsx`
-- Modify hero section in `src/components/Hero.tsx`
-- Update contact information in `src/components/Footer.tsx`
-
-## Support
-
-For technical support or customization requests, please contact the development team.
-
-## License
-
-This project is proprietary software developed for Tarim Tours.
+This approach provides flexibility and scalability for the long term.
 

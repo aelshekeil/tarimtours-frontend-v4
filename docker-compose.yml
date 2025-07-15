@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  tarimtours-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_SUPABASE_URL: https://vrvrhzseqnjpriqesgoj.supabase.co
+        VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZydnJoenNlcW5qcHJpcWVzZ29qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNjA4OTAsImV4cCI6MjA2NzczNjg5MH0.1D9ES2hGCgC8726b9HNiPNoQF1SYxHYjTezUGshMFNM
+        VITE_TRIPCOM_API_KEY: ${VITE_TRIPCOM_API_KEY:-}
+        VITE_TRIPCOM_API_URL: ${VITE_TRIPCOM_API_URL:-https://api.trip.com/v1}
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - tarimtours-network
+
+networks:
+  tarimtours-network:
+    driver: bridge
+
