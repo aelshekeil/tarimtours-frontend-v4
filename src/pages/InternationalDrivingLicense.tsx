@@ -1,7 +1,8 @@
 import { FC, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
-import { DrivingLicenseApplicationData, submitDrivingLicenseApplication } from '../services/applicationApi';
+import { DrivingLicenseApplicationData } from '../services/applicationApi';
+import supabaseAPI from '../services/supabaseAPI';
 import Dropzone from '../components/forms/Dropzone';
 import ProgressBar from '../components/common/ProgressBar';
 import countries from 'i18n-iso-countries';
@@ -107,8 +108,21 @@ const InternationalDrivingLicense: FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await submitDrivingLicenseApplication(applicationData);
-      setTrackingNumber(response.data.trackingNumber);
+      // Map file fields to Supabase API expectations
+      const filesForSupabase = {
+        licenseFront: files.oldLicenseCopy!,
+        passportPage: files.idCopy!,
+        personalPhoto: files.photo!,
+      };
+      const response = await supabaseAPI.submitInternationalDrivingLicenseApplication(
+        {
+          fullName,
+          email,
+          paymentStatus: 'pending',
+        },
+        filesForSupabase
+      );
+      setTrackingNumber(response.attributes.trackingId);
       setCurrentStep(4);
     } catch (err: any) {
       setError(err.message || t('common.submission_failed'));
