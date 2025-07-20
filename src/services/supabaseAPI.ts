@@ -58,9 +58,9 @@ class SupabaseAPI {
     };
   }
 
-  async login(identifier: string, password: string): Promise<AuthResponse> {
+  async login(email: string, password: string): Promise<AuthResponse> {
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: identifier,
+      email: email,
       password,
     });
 
@@ -409,4 +409,3 @@ class SupabaseAPI {
 
 const supabaseAPI = new SupabaseAPI();
 export default supabaseAPI;
-

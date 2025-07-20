@@ -3,7 +3,7 @@ import { MapPin, Calendar, DollarSign, Star, Clock, Heart, Eye, ArrowRight, Sear
 import { useTranslation } from 'react-i18next';
 
 // API configuration
-const API_URL = 'https://back.tarimtours.com';
+const API_URL = import.meta.env.VITE_SUPABASE_URL;
 const API_ENDPOINT = `${API_URL}/api/travel-packages?populate=*`;
 
 // Types based on your Strapi structure

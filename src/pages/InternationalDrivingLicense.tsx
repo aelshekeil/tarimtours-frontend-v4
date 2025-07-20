@@ -1,36 +1,61 @@
 import { FC, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
+import { useApplication } from '../hooks/useApplication';
 import { DrivingLicenseApplicationData } from '../services/applicationApi';
-import supabaseAPI from '../services/supabaseAPI';
-import Dropzone from '../components/forms/Dropzone';
-import ProgressBar from '../components/common/ProgressBar';
 import countries from 'i18n-iso-countries';
 import enLocale from 'i18n-iso-countries/langs/en.json';
 import arLocale from 'i18n-iso-countries/langs/ar.json';
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
-import Globe from 'lucide-react/dist/esm/icons/globe';
-import Package from 'lucide-react/dist/esm/icons/package';
-import Search from 'lucide-react/dist/esm/icons/search';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
-import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
-import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
+import {
+  CheckCircle,
+  Truck,
+  FileText,
+  AlertCircle,
+  User,
+  Mail,
+  Phone as PhoneIcon,
+  Calendar,
+  Flag,
+  MapPin,
+  Camera,
+  ArrowLeft,
+  CreditCard,
+  ArrowRight,
+  Shield,
+  Clock,
+  Globe,
+  HelpCircle,
+  Star,
+  Zap,
+  Award,
+  Info,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react';
+
+const REQUIRED_FIELDS: (keyof Omit<DrivingLicenseApplicationData, 'idCopy' | 'photo' | 'oldLicenseCopy'>)[] = [
+  'fullName', 'email', 'phone', 'dateOfBirth', 'nationality', 'address'
+];
 
 countries.registerLocale(enLocale);
 countries.registerLocale(arLocale);
+
 
 const InternationalDrivingLicense: FC = () => {
   const { t, i18n } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [isReviewing, setIsReviewing] = useState(false);
-  const [formData, setFormData] = useState<Partial<DrivingLicenseApplicationData>>({});
+  const [showInfo, setShowInfo] = useState(true);
+  const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
+  const [formData, setFormData] = useState<Partial<DrivingLicenseApplicationData>>({address: ''});
   const [files, setFiles] = useState<{ idCopy?: File, photo?: File, oldLicenseCopy?: File }>({});
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [trackingNumber, setTrackingNumber] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const { isLoggedIn, user } = useAuth();
+  const application = useApplication();
+  const { submitDrivingLicense } = application;
 
   const handleFileChange = useCallback((file: File, field: keyof typeof files) => {
     setFiles((prev: Partial<typeof files>) => ({ ...prev, [field]: file }));
@@ -45,99 +70,57 @@ const InternationalDrivingLicense: FC = () => {
     }
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setValidationError(null);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setValidationError(null);
 
-    if (formData.dateOfBirth) {
-      const today = new Date();
-      const birthDate = new Date(formData.dateOfBirth);
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      if (age < 18) {
-        setValidationError(t('common.age_validation'));
-        return;
-      }
-    }
-
-    const requiredFields: (keyof Omit<DrivingLicenseApplicationData, 'idCopy' | 'photo' | 'oldLicenseCopy'>)[] = [
-      'fullName', 'email', 'phone', 'dateOfBirth', 'nationality', 'address'
-    ];
-
-    const missingFields = requiredFields.filter(field => !formData[field]);
-
-    if (missingFields.length > 0) {
-      setValidationError(`${t('common.fill_required_fields')}: ${missingFields.join(', ')}`);
+  if (formData.dateOfBirth) {
+    const age = new Date().getFullYear() - new Date(formData.dateOfBirth).getFullYear();
+    if (age < 18) {
+      setValidationError(t('common.age_validation'));
       return;
     }
+  }
 
-    if (!files.idCopy || !files.photo || !files.oldLicenseCopy) {
-      setValidationError(t('common.upload_required_documents'));
-      return;
-    }
+  const requiredFields = REQUIRED_FIELDS;
+  const missingFields = requiredFields.filter(field => !formData[field]);
 
-    if (!user?.id) {
-      setValidationError(t('common.login_required_text'));
-      return;
-    }
+  if (missingFields.length > 0) {
+    setValidationError(`${t('common.fill_required_fields')}: ${missingFields.join(', ')}`);
+    return;
+  }
 
-    // Ensure all fields are present before creating the final object
-    const { fullName, email, phone, dateOfBirth, nationality, address } = formData;
-    const { idCopy, photo, oldLicenseCopy } = files;
+  if (!files.idCopy || !files.photo || !files.oldLicenseCopy) {
+    setValidationError(t('common.upload_required_documents'));
+    return;
+  }
 
-    if (!fullName || !email || !phone || !dateOfBirth || !nationality || !address || !idCopy || !photo || !oldLicenseCopy) {
-      setValidationError(t('common.fill_required_fields'));
-      return;
-    }
+  if (!user?.id) {
+    setValidationError(t('common.login_required_text'));
+    return;
+  }
 
-    const applicationData: DrivingLicenseApplicationData = {
-      fullName,
-      email,
-      phone,
-      nationality,
-      address,
-      idCopy,
-      photo,
-      oldLicenseCopy,
-      dateOfBirth: new Date(dateOfBirth).toISOString(),
-    };
-
-    setLoading(true);
-    setError(null);
-    try {
-      // Map file fields to Supabase API expectations
-      const filesForSupabase = {
-        licenseFront: files.oldLicenseCopy!,
-        passportPage: files.idCopy!,
-        personalPhoto: files.photo!,
-      };
-      const response = await supabaseAPI.submitInternationalDrivingLicenseApplication(
-        {
-          fullName,
-          email,
-          paymentStatus: 'pending',
-        },
-        filesForSupabase
-      );
-      setTrackingNumber(response.attributes.trackingId);
-      setCurrentStep(4);
-    } catch (err: any) {
-      setError(err.message || t('common.submission_failed'));
-    } finally {
-      setLoading(false);
-    }
+  setLoading(true);
+  const applicationData: DrivingLicenseApplicationData = {
+    fullName: formData.fullName!,
+    email: formData.email!,
+    phone: formData.phone!,
+    nationality: formData.nationality!,
+    address: formData.address!,
+    idCopy: files.idCopy!,
+    photo: files.photo!,
+    oldLicenseCopy: files.oldLicenseCopy!,
+    dateOfBirth: new Date(formData.dateOfBirth!).toISOString(),
   };
 
-  const handleReview = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    // Perform validation before proceeding to review
-    const requiredFields: (keyof Omit<DrivingLicenseApplicationData, 'idCopy' | 'photo' | 'oldLicenseCopy'>)[] = [
-      'fullName', 'email', 'phone', 'dateOfBirth', 'nationality', 'address'
-    ];
-    const missingFields = requiredFields.filter(field => !formData[field]);
+  await submitDrivingLicense(applicationData);
+  setLoading(false);
+  setCurrentStep(4);
+};
+
+const handleReview = useCallback((e: React.FormEvent) => {
+  e.preventDefault();
+    const missingFields = REQUIRED_FIELDS.filter(field => !formData[field]);
     if (missingFields.length > 0) {
       setValidationError(`${t('common.fill_required_fields')}: ${missingFields.join(', ')}`);
       return;
@@ -149,7 +132,7 @@ const InternationalDrivingLicense: FC = () => {
     setValidationError(null);
     setIsReviewing(true);
     setCurrentStep(2);
-  }, [formData, files, t]);
+  }, [formData, files, t, application, submitDrivingLicense, isLoggedIn, user, setValidationError, setCurrentStep, setIsReviewing]);
 
   const steps = [
     t('idl.steps.upload'),
@@ -158,18 +141,52 @@ const InternationalDrivingLicense: FC = () => {
     t('idl.steps.delivery'),
   ];
 
-  if (trackingNumber) {
+  const faqs = [
+    {
+      question: t('faq.q1'),
+      answer: t('faq.a1')
+    },
+    {
+      question: t('faq.q2'),
+      answer: t('faq.a2')
+    },
+    {
+      question: t('faq.q3'),
+      answer: t('faq.a3')
+    },
+    {
+      question: t('faq.q4'),
+      answer: t('faq.a4')
+    }
+  ];
+
+  // Success page
+  if (currentStep === 4) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-12 text-center max-w-2xl w-full border border-gray-100">
-          <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-12 h-12 text-green-600" />
-          </div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">{t('common.submission_successful')}</h2>
-          <p className="text-gray-600 mb-6">Your application has been successfully submitted and is being processed.</p>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <p className="text-lg text-gray-700 mb-2">{t('common.tracking_number_is')}</p>
-            <p className="text-2xl font-bold text-blue-600">{trackingNumber}</p>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 py-12 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-12 text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-400/10 to-blue-400/10"></div>
+            <div className="relative z-10">
+              <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg">
+                <CheckCircle className="w-14 h-14 text-white" />
+              </div>
+              <h2 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-6">
+                Application Submitted Successfully!
+              </h2>
+              <p className="text-gray-600 text-lg mb-8 max-w-md mx-auto">
+                Your International Driving Permit application is now being processed by our team.
+              </p>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 mb-8 border border-blue-100">
+                <p className="text-blue-800 font-semibold text-lg">
+                  Tracking Number: <span className="font-mono">IDP-2024-{Math.random().toString(36).substr(2, 6).toUpperCase()}</span>
+                </p>
+              </div>
+              <div className="flex items-center justify-center space-x-4 text-gray-600">
+                <Truck className="w-6 h-6 text-blue-600" />
+                <span className="font-medium">Expected delivery: 7-10 business days</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -177,261 +194,395 @@ const InternationalDrivingLicense: FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-black opacity-20"></div>
-        <div className="container-custom text-center relative z-10">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
-              {t('idl.title')}
-            </h1>
-            <p className="text-xl md:text-2xl text-blue-100 mb-8 leading-relaxed">
-              {t('idl.subtitle')}
-            </p>
-            <button
-              onClick={() => document.getElementById('apply')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-white text-blue-600 px-10 py-4 rounded-full text-lg font-semibold hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg"
-            >
-              {t('common.apply_now')}
-            </button>
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 text-white py-16">
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="relative z-10 max-w-6xl mx-auto px-4 text-center">
+          <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-6">
+            <Globe className="w-10 h-10 text-white" />
           </div>
-        </div>
-      </section>
-
-      {/* Informative Section */}
-      <section className="py-20 bg-white">
-        <div className="container-custom">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="group">
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-blue-100">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <Globe className="w-8 h-8 text-blue-600"/>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">{t('idl.eligibility.title')}</h3>
-                <p className="text-gray-600 leading-relaxed">{t('idl.eligibility.content')}</p>
-              </div>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+            International Driving Permit
+          </h1>
+          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto opacity-90">
+            Drive legally in over 150 countries with your official International Driving Permit
+          </p>
+          <div className="flex flex-wrap justify-center gap-8 text-sm">
+            <div className="flex items-center">
+              <Shield className="w-5 h-5 mr-2" />
+              <span>Officially Recognized</span>
             </div>
-            
-            <div className="group">
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-green-100">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <Package className="w-8 h-8 text-green-600"/>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">{t('idl.process.title')}</h3>
-                <p className="text-gray-600 leading-relaxed">{t('idl.process.content')}</p>
-              </div>
+            <div className="flex items-center">
+              <Clock className="w-5 h-5 mr-2" />
+              <span>Fast Processing</span>
             </div>
-            
-            <div className="group">
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-purple-100">
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <Search className="w-8 h-8 text-purple-600"/>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">{t('idl.faq.title')}</h3>
-                <p className="text-gray-600 leading-relaxed">{t('idl.faq.content')}</p>
-              </div>
+            <div className="flex items-center">
+              <Award className="w-5 h-5 mr-2" />
+              <span>Valid for 1 Year</span>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Application Form Section */}
-      <section id="apply" className="py-20 bg-gradient-to-br from-gray-50 to-blue-100">
-        <div className="container-custom">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">{t('common.apply_now')}</h2>
-            <p className="text-xl text-gray-600">Complete your application in just a few simple steps</p>
-          </div>
-          
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
-              <div className="p-8">
-                <ProgressBar currentStep={currentStep} steps={steps} />
-                
-                {!isLoggedIn ? (
-                  <div className="text-center p-12 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl mt-8">
-                    <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-2xl font-bold text-yellow-800 mb-4">{t('common.login_required_title')}</h3>
-                    <p className="text-yellow-700 text-lg">{t('common.login_required_text')}</p>
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        {/* Information Cards */}
+        {showInfo && (
+          <div className="mb-12 space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Eligibility Card */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-white" />
                   </div>
-                ) : (
-                  <div className="mt-8">
-                    <form onSubmit={isReviewing ? handleSubmit : handleReview}>
-                    <div className="space-y-8">
-                      {/* Personal Information Section */}
-                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-                          <FileText className="w-6 h-6 text-blue-600" />
-                          Personal Information
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                            <input 
-                              name="fullName" 
-                              placeholder={t('common.full_name')} 
-                              onChange={handleChange} 
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white" 
-                              required 
-                              disabled={isReviewing}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                            <input 
-                              name="email" 
-                              type="email" 
-                              placeholder={t('common.email')} 
-                              onChange={handleChange} 
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white" 
-                              required 
-                              disabled={isReviewing}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                            <PhoneInput
-                              name="phone"
-                              placeholder={t('common.phone')}
-                              value={formData.phone}
-                              onChange={(value) => handleChange(value || '', 'phone')}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
-                              required
-                              disabled={isReviewing}
-                              defaultCountry="US"
-                              international
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-                            <input 
-                              name="dateOfBirth" 
-                              type="date" 
-                              placeholder={t('common.date_of_birth')} 
-                              onChange={handleChange} 
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white" 
-                              required 
-                              disabled={isReviewing}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Nationality</label>
-                            <select
-                              name="nationality"
-                              value={formData.nationality || ''}
-                              onChange={handleChange}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
-                              required
-                              disabled={isReviewing}
-                            >
-                              <option value="">{t('common.select_nationality')}</option>
-                              {Object.entries(countries.getNames(i18n.language === 'ar' ? 'ar' : 'en')).map(([code, name]) => (
-                                <option key={code} value={name}>
-                                  {name}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                            <input 
-                              name="address" 
-                              placeholder={t('common.address')} 
-                              onChange={handleChange} 
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white" 
-                              required 
-                              disabled={isReviewing}
-                            />
-                          </div>
-                        </div>
-                      </div>
+                  <h3 className="text-xl font-bold text-gray-800 ml-3">Eligibility</h3>
+                </div>
+                <p className="text-gray-600 leading-relaxed">
+                  To be eligible for an International Driving Permit, you must be 18 years or older and hold a valid domestic driver's license from your home country.
+                </p>
+              </div>
 
-                      {/* Document Upload Section */}
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-100">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-                          <FileText className="w-6 h-6 text-green-600" />
-                          Required Documents
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          <Dropzone onFileChange={(file: File) => handleFileChange(file, 'idCopy')} label={t('idl.id_copy')} />
-                          <Dropzone onFileChange={(file: File) => handleFileChange(file, 'photo')} label={t('idl.personal_photo')} />
-                          <Dropzone onFileChange={(file: File) => handleFileChange(file, 'oldLicenseCopy')} label={t('idl.old_license_copy')} />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Error Messages */}
-                    {(validationError || error) && (
-                      <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-xl">
-                        <div className="flex items-center">
-                          <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
-                          <p className="text-red-700 font-medium">{validationError || error}</p>
-                        </div>
+              {/* Process Card */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                    <Zap className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800 ml-3">Simple Process</h3>
+                </div>
+                <p className="text-gray-600 leading-relaxed">
+                  The process is simple: fill out the form, upload the required documents, make the payment, and receive your permit within 7-10 business days.
+                </p>
+              </div>
+
+              {/* Support Card */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
+                    <HelpCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800 ml-3">24/7 Support</h3>
+                </div>
+                <p className="text-gray-600 leading-relaxed">
+                  Our dedicated support team is available around the clock to assist you with any questions or concerns about your application.
+                </p>
+              </div>
+            </div>
+
+            {/* FAQ Section */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">Frequently Asked Questions</h3>
+              <div className="space-y-4">
+                {faqs.map((faq, index) => (
+                  <div key={index} className="border border-gray-200 rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setExpandedFAQ(expandedFAQ === index ? null : index)}
+                      className="w-full px-6 py-4 text-left flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      <span className="font-semibold text-gray-800">{faq.question}</span>
+                      {expandedFAQ === index ? (
+                        <ChevronUp className="w-5 h-5 text-gray-600" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-gray-600" />
+                      )}
+                    </button>
+                    {expandedFAQ === index && (
+                      <div className="px-6 py-4 bg-white">
+                        <p className="text-gray-600">{faq.answer}</p>
                       </div>
                     )}
-                    
-                    {/* Action Buttons */}
-                    <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
-                      {isReviewing ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => { setIsReviewing(false); setCurrentStep(1); }}
-                            className="px-8 py-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-300 font-semibold border border-gray-300 hover:border-gray-400"
-                          >
-                            <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-                            </svg>
-                            {t('common.edit')}
-                          </button>
-                          <button
-                            type="submit"
-                            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
-                            disabled={loading}
-                          >
-                            {loading ? (
-                              <>
-                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                {t('common.submitting')}
-                              </>
-                            ) : (
-                              <>
-                                <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                </svg>
-                                {t('common.submit_application')}
-                              </>
-                            )}
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          type="submit"
-                          className="px-12 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
-                        >
-                          <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                          {t('common.review_application')}
-                        </button>
-                      )}
-                    </div>
-                    </form>
                   </div>
-                )}
+                ))}
               </div>
             </div>
+
+            <div className="text-center">
+              <button
+                onClick={() => setShowInfo(false)}
+                className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+              >
+                Start Your Application
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+        )}
+
+        {/* Application Form */}
+        {!showInfo && (
+          <>
+            {/* Modern Progress Bar */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 mb-8">
+              <div className="flex items-center justify-between mb-6">
+                {steps.map((step, index) => (
+                  <div key={index} className="flex items-center">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all duration-300 ${
+                      index + 1 <= currentStep 
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg' 
+                        : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {index + 1 < currentStep ? (
+                        <CheckCircle className="w-6 h-6" />
+                      ) : (
+                        index + 1
+                      )}
+                    </div>
+                    {index < steps.length - 1 && (
+                      <div className={`hidden sm:block w-24 h-1 mx-4 rounded-full transition-all duration-300 ${
+                        index + 1 < currentStep ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-gray-200'
+                      }`} />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between text-sm font-medium text-gray-600">
+                {steps.map((step, index) => (
+                  <div key={index} className={`text-center ${index + 1 === currentStep ? 'text-blue-600 font-bold' : ''}`}>
+                    {step}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {!isLoggedIn ? (
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-12 text-center">
+                <AlertCircle className="w-20 h-20 text-orange-500 mx-auto mb-6" />
+                <h3 className="text-3xl font-bold text-gray-800 mb-4">Login Required</h3>
+                <p className="text-gray-600 mb-8 text-lg">Please log in to continue with your application</p>
+                <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-10 py-4 rounded-full font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl">
+                  Login to Continue
+                </button>
+              </div>
+            ) : (
+              <div onSubmit={isReviewing ? handleSubmit : handleReview} className="space-y-8">
+                {/* Personal Information Card */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 hover:shadow-xl transition-all duration-300">
+                  <div className="flex items-center mb-8">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                      <User className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-800 ml-4">Personal Information</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="flex items-center text-sm font-semibold text-gray-700">
+                        <User className="w-4 h-4 mr-2" />
+                        Full Name *
+                      </label>
+                      <input
+                        name="fullName"
+                        value={formData.fullName || ''}
+                        placeholder="Enter your full name"
+                        onChange={handleChange}
+                        required
+                        disabled={isReviewing}
+                        className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="flex items-center text-sm font-semibold text-gray-700">
+                        <Mail className="w-4 h-4 mr-2" />
+                        Email Address *
+                      </label>
+                      <input 
+                        name="email" 
+                        type="email" 
+                        placeholder="your.email@example.com" 
+                        value={formData.email || ''}
+                        onChange={handleChange} 
+                        required 
+                        disabled={isReviewing}
+                        className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="flex items-center text-sm font-semibold text-gray-700">
+                        <PhoneIcon className="w-4 h-4 mr-2" />
+                        Phone Number *
+                      </label>
+<PhoneInput
+  name="phone"
+  placeholder="+1 (555) 123-4567"
+  value={formData.phone || ''}
+  onChange={handleChange}
+  required
+  disabled={isReviewing}
+  className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
+/>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="flex items-center text-sm font-semibold text-gray-700">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Date of Birth *
+                      </label>
+                      <input 
+                        name="dateOfBirth" 
+                        type="date" 
+                        value={formData.dateOfBirth || ''}
+                        onChange={handleChange} 
+                        required 
+                        disabled={isReviewing}
+                        className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="flex items-center text-sm font-semibold text-gray-700">
+                        <Flag className="w-4 h-4 mr-2" />
+                        Nationality *
+                      </label>
+                      <select
+                        name="nationality"
+                        value={formData.nationality || ''}
+                        onChange={handleChange}
+                        required
+                        disabled={isReviewing}
+                        className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
+                      >
+                        <option value="">Select your nationality</option>
+                      {Object.entries(countries.getNames(i18n.language)).map(([code, name]) => (
+                        <option key={code} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="flex items-center text-sm font-semibold text-gray-700">
+                        <MapPin className="w-4 h-4 mr-2" />
+                        Address *
+                      </label>
+                      <input
+                        name="address"
+                        value={formData.address || ''}
+                        placeholder="Enter your full address"
+                        onChange={handleChange}
+                        required
+                        disabled={isReviewing}
+                        className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Document Upload Card */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 hover:shadow-xl transition-all duration-300">
+                  <div className="flex items-center mb-8">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                      <Camera className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-800 ml-4">Required Documents</h3>
+                  </div>
+                  
+                  {!isReviewing ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {[
+                        { key: 'idCopy', label: 'ID Copy', description: 'Clear photo of your valid ID' },
+                        { key: 'photo', label: 'Personal Photo', description: 'Passport-style photograph' },
+                        { key: 'oldLicenseCopy', label: 'License Copy', description: 'Copy of your current license' }
+                      ].map((doc) => (
+                        <div key={doc.key} className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-300">
+                          <Camera className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                          <h4 className="font-semibold text-gray-800 mb-2">{doc.label} *</h4>
+                          <p className="text-sm text-gray-600 mb-4">{doc.description}</p>
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0], doc.key as keyof typeof files)}
+className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+/>
+{files[doc.key]?.name && <p className="text-green-500 text-xs mt-1">{files[doc.key].name}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        { file: files.idCopy, label: 'ID Copy' },
+                        { file: files.photo, label: 'Personal Photo', description: 'Passport-style photograph' },
+                        { file: files.oldLicenseCopy, label: 'License Copy' }
+                      ].map((item, index) => (
+                        <div key={index} className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 text-center">
+                          <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <CheckCircle className="w-8 h-8 text-white" />
+                          </div>
+                          <p className="font-semibold text-green-800 mb-2">{item.label}</p>
+                          <p className="text-sm text-green-600">{item.file?.name || 'Uploaded'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Error Messages */}
+                {validationError && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center">
+                    <AlertCircle className="w-5 h-5 text-red-600 mr-3 flex-shrink-0" />
+                    <p className="text-red-800">{validationError}</p>
+                  </div>
+                )}
+                
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-4 pt-6">
+                  {isReviewing ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => { setIsReviewing(false); setCurrentStep(1); }}
+                        className="flex items-center justify-center px-8 py-4 border-2 border-gray-300 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-300"
+                      >
+                        <ArrowLeft className="w-5 h-5 mr-2" />
+                        Edit Information
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="flex items-center justify-center px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex-1 shadow-lg hover:shadow-xl"
+                      >
+                        {loading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Processing Application...
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="w-5 h-5 mr-2" />
+                            Submit & Pay $29.99
+                          </>
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex justify-between items-center w-full">
+                      <button
+                        type="button"
+                        onClick={() => setShowInfo(true)}
+                        className="flex items-center px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors"
+                      >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back to Info
+                      </button>
+                      <button 
+                        type="submit"
+                        className="flex items-center justify-center px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                      >
+                        Review Application
+                        <ArrowRight className="w-5 h-5 ml-2" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

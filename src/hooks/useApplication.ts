@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { submitDrivingLicenseApplication, submitVisaApplication, trackApplication, DrivingLicenseApplicationData, VisaApplicationData } from '../services/applicationApi';
+import axios from 'axios';
 
 export const useApplication = () => {
   const [loading, setLoading] = useState(false);
@@ -12,7 +13,7 @@ export const useApplication = () => {
     setError(null);
     try {
       const response = await submitDrivingLicenseApplication(data);
-      setTrackingNumber(response.data.trackingNumber);
+      setTrackingNumber(response.trackingNumber);
     } catch (err) {
       setError('Failed to submit application. Please try again.');
     } finally {
@@ -25,7 +26,7 @@ export const useApplication = () => {
     setError(null);
     try {
       const response = await submitVisaApplication(data);
-      setTrackingNumber(response.data.trackingNumber);
+      setTrackingNumber(response.trackingNumber);
     } catch (err) {
       setError('Failed to submit application. Please try again.');
     } finally {

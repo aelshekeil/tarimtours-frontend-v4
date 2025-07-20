@@ -16,7 +16,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
     password: '',
   });
@@ -40,9 +39,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       let userResponse;
       if (isLogin) {
-        userResponse = await strapiAPI.login(formData.username, formData.password);
+        userResponse = await strapiAPI.login(formData.email, formData.password);
       } else {
-        userResponse = await strapiAPI.register(formData.username, formData.email, formData.password);
+        userResponse = await strapiAPI.register(formData.email, formData.email, formData.password);
       }
       
       if (!userResponse.jwt) {
@@ -59,7 +58,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       strapiAPI.setToken(userResponse.jwt); // Set the token in the API service
 
       onClose();
-      setFormData({ username: '', email: '', password: '' });
+      setFormData({ email: '', password: '' });
       window.dispatchEvent(new CustomEvent('authChange')); // Dispatch event for useAuth to pick up
     } catch (err: any) {
       setError(err.message);
@@ -71,7 +70,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setError(null);
-    setFormData({ username: '', email: '', password: '' });
+    setFormData({ email: '', password: ''});
   };
 
   if (!isOpen) return null;
@@ -105,22 +104,22 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         {/* Form */}
         <div className="px-8 pb-8">
           <div className="space-y-6">
-            {/* Username Field */}
+            {/* Email Field */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Username
+                Email Address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="text-gray-400" size={18} />
+                  <Mail className="text-gray-400" size={18} />
                 </div>
                 <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
+                  type="email"
+                  name="email"
+                  value={formData.email}
                   onChange={handleChange}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                  placeholder="Enter your username"
+                  placeholder="Enter your email address"
                   required
                 />
               </div>

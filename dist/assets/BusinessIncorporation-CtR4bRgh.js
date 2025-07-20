@@ -1,1 +1,0 @@
-import{j as s}from"./index-DJmngt_-.js";const e=()=>s.jsxs("div",{className:"container-custom py-20",children:[s.jsx("h1",{className:"text-3xl font-bold",children:"Business Incorporation"}),s.jsx("p",{children:"Our Business Incorporation service is coming soon. Please check back later."})]});export{e as default};

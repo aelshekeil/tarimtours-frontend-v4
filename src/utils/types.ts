@@ -1,5 +1,5 @@
 // API configuration and types
-export const API_URL = import.meta.env.VITE_API_URL || 'https://back.tarimtours.com';
+export const API_URL = import.meta.env.VITE_SUPABASE_URL;
 
 // Strapi response types
 export interface StrapiResponse<T> {
@@ -233,4 +233,3 @@ export interface CartItem {
   product_details?: ProductDetails;
   image_url?: string;
 }
-
