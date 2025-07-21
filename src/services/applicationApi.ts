@@ -61,18 +61,17 @@ export const submitDrivingLicenseApplication = async (
 ) => {
   const { idCopy, photo, oldLicenseCopy, fullName, email, phone, dateOfBirth, nationality, address } = data;
 
-  // In a real Supabase implementation, you would handle file uploads separately
-  // and then store the URLs in the database.
-  // This is a simplified example assuming the API handles it.
+  // Interface for the response from submitDrivingLicenseApplication
+  interface SubmitDrivingLicenseResponse {
+      trackingNumber?: string;
+      error?: string;
+    }
 
-interface SubmitDrivingLicenseResponse {
-    trackingNumber?: string;
-    error?: string;
-  }
-
-const trackingId = Math.random().toString(36).substring(2, 4).toUpperCase() + Math.floor(1000 + Math.random() * 9000).toString();
+  // Generate a tracking ID before inserting into the database
+  const trackingId = Math.random().toString(36).substring(2, 4).toUpperCase() + Math.floor(1000 + Math.random() * 9000).toString();
 
   try {
+    // Prepare the request body including the generated tracking_id
     const requestBody = {
       fullName,
       email,
@@ -80,31 +79,38 @@ const trackingId = Math.random().toString(36).substring(2, 4).toUpperCase() + Ma
       dateOfBirth,
       nationality,
       address,
-      tracking_id: trackingId,
+      tracking_id: trackingId, // Include tracking_id in the request body
     };
 
     console.log('Request body:', requestBody);
+
+    // Helper function to upload files to Supabase storage
     const uploadFile = async (file: File, path: string) => {
-      const { data, error } = await supabase.storage
-        .from('applications')
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('applications') // Assuming 'applications' is the bucket name
         .upload(`${trackingId}/${path}`, file, {
           cacheControl: '3600',
           upsert: false,
         });
 
-      if (error) {
-        console.error('Error uploading file:', error);
-        throw error;
+      if (uploadError) {
+        console.error('Error uploading file:', uploadError);
+        // Consider rolling back the insert if file upload fails
+        throw uploadError;
       }
-
-      return `${API_URL}/storage/v1/object/public/${data.path}`;
+      // Construct the public URL for the uploaded file
+      // Example: "https://your-project-ref.supabase.co/storage/v1/object/public/applications/trackingId/idCopy"
+      return `${API_URL}/storage/v1/object/public/${uploadData.path}`;
     };
 
-    const idCopyUrl = await uploadFile(idCopy, 'idCopy');
-    const photoUrl = await uploadFile(photo, 'photo');
-    const oldLicenseCopyUrl = await uploadFile(oldLicenseCopy, 'oldLicenseCopy');
+    // Upload files concurrently
+    const [idCopyUrl, photoUrl, oldLicenseCopyUrl] = await Promise.all([
+      uploadFile(idCopy, 'idCopy'),
+      uploadFile(photo, 'photo'),
+      uploadFile(oldLicenseCopy, 'oldLicenseCopy'),
+    ]);
 
-    // 2. Send the form data, including the file URLs, to the Supabase database
+    // Send the form data, including the file URLs and tracking_id, to the Supabase database
     const response = await api.post('/international_driving_license_applications', {
       fullName,
       email,
@@ -112,12 +118,13 @@ const trackingId = Math.random().toString(36).substring(2, 4).toUpperCase() + Ma
       dateOfBirth,
       nationality,
       address,
-      tracking_id: trackingId,
+      tracking_id: trackingId, // Ensure tracking_id is sent in the POST request
       idCopyUrl: idCopyUrl,
       photoUrl: photoUrl,
       oldLicenseCopyUrl: oldLicenseCopyUrl,
     });
 
+    // Extract trackingNumber from the response (assuming the backend returns it)
     const result: SubmitDrivingLicenseResponse = {
       trackingNumber: response.data.trackingNumber,
       error: response.data.error,

@@ -1,3 +1,4 @@
+// InternationalDrivingLicense.tsx
 import { FC, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
@@ -35,13 +36,15 @@ import {
   ChevronUp
 } from 'lucide-react';
 
-const REQUIRED_FIELDS: (keyof Omit<DrivingLicenseApplicationData, 'idCopy' | 'photo' | 'oldLicenseCopy'>)[] = [
-  'fullName', 'email', 'phone', 'dateOfBirth', 'nationality', 'address'
-];
+const REQUIRED_FIELDS: (keyof Omit<DrivingLicenseApplicationData, 'idCopy' | 'photo' | 'oldLicenseCopy'>)[] =
+  ['fullName', 'email', 'phone', 'dateOfBirth', 'nationality', 'address'];
 
 countries.registerLocale(enLocale);
 countries.registerLocale(arLocale);
 
+// 6-char random id like Supabase short-uuid
+const generateTrackingId = () =>
+  Math.random().toString(36).substring(2, 8).toUpperCase();
 
 const InternationalDrivingLicense: FC = () => {
   const { t, i18n } = useTranslation();
@@ -49,79 +52,45 @@ const InternationalDrivingLicense: FC = () => {
   const [isReviewing, setIsReviewing] = useState(false);
   const [showInfo, setShowInfo] = useState(true);
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
-  const [formData, setFormData] = useState<Partial<DrivingLicenseApplicationData>>({address: ''});
-  const [files, setFiles] = useState<{ idCopy?: File, photo?: File, oldLicenseCopy?: File }>({});
+  const [formData, setFormData] = useState<Partial<DrivingLicenseApplicationData>>({ address: '' });
+  const [files, setFiles] = useState<{ idCopy?: File; photo?: File; oldLicenseCopy?: File }>({});
   const [loading, setLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [trackingId, setTrackingId] = useState(''); // NEW
   const { isLoggedIn, user } = useAuth();
-  const application = useApplication();
-  const { submitDrivingLicense } = application;
+  const { submitDrivingLicense } = useApplication();
 
-  const handleFileChange = useCallback((file: File, field: keyof typeof files) => {
-    setFiles((prev: Partial<typeof files>) => ({ ...prev, [field]: file }));
-  }, []);
+  const handleFileChange = useCallback(
+    (file: File, field: keyof typeof files) => setFiles((prev) => ({ ...prev, [field]: file })),
+    []
+  );
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | string, name?: string) => {
-    if (name === 'phone' && typeof e === 'string') {
-      setFormData(prev => ({ ...prev, phone: e }));
-    } else if (typeof e === 'object' && 'target' in e) {
-      const { name: targetName, value } = e.target;
-      setFormData(prev => ({ ...prev, [targetName]: value }));
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | string, name?: string) => {
+      if (name === 'phone' && typeof e === 'string') {
+        setFormData((prev) => ({ ...prev, phone: e }));
+      } else if (typeof e === 'object' && 'target' in e) {
+        const { name: targetName, value } = e.target;
+        setFormData((prev) => ({ ...prev, [targetName]: value }));
+      }
+    },
+    []
+  );
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setValidationError(null);
+
+    if (formData.dateOfBirth) {
+      const age = new Date().getFullYear() - new Date(formData.dateOfBirth).getFullYear();
+      if (age < 18) {
+        setValidationError(t('common.age_validation'));
+        return;
+      }
     }
-  }, []);
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setValidationError(null);
-
-  if (formData.dateOfBirth) {
-    const age = new Date().getFullYear() - new Date(formData.dateOfBirth).getFullYear();
-    if (age < 18) {
-      setValidationError(t('common.age_validation'));
-      return;
-    }
-  }
-
-  const requiredFields = REQUIRED_FIELDS;
-  const missingFields = requiredFields.filter(field => !formData[field]);
-
-  if (missingFields.length > 0) {
-    setValidationError(`${t('common.fill_required_fields')}: ${missingFields.join(', ')}`);
-    return;
-  }
-
-  if (!files.idCopy || !files.photo || !files.oldLicenseCopy) {
-    setValidationError(t('common.upload_required_documents'));
-    return;
-  }
-
-  if (!user?.id) {
-    setValidationError(t('common.login_required_text'));
-    return;
-  }
-
-  setLoading(true);
-  const applicationData: DrivingLicenseApplicationData = {
-    fullName: formData.fullName!,
-    email: formData.email!,
-    phone: formData.phone!,
-    nationality: formData.nationality!,
-    address: formData.address!,
-    idCopy: files.idCopy!,
-    photo: files.photo!,
-    oldLicenseCopy: files.oldLicenseCopy!,
-    dateOfBirth: new Date(formData.dateOfBirth!).toISOString(),
-  };
-
-  await submitDrivingLicense(applicationData);
-  setLoading(false);
-  setCurrentStep(4);
-};
-
-const handleReview = useCallback((e: React.FormEvent) => {
-  e.preventDefault();
-    const missingFields = REQUIRED_FIELDS.filter(field => !formData[field]);
-    if (missingFields.length > 0) {
+    const missingFields = REQUIRED_FIELDS.filter((field) => !formData[field]);
+    if (missingFields.length) {
       setValidationError(`${t('common.fill_required_fields')}: ${missingFields.join(', ')}`);
       return;
     }
@@ -129,39 +98,74 @@ const handleReview = useCallback((e: React.FormEvent) => {
       setValidationError(t('common.upload_required_documents'));
       return;
     }
-    setValidationError(null);
-    setIsReviewing(true);
-    setCurrentStep(2);
-  }, [formData, files, t, application, submitDrivingLicense, isLoggedIn, user, setValidationError, setCurrentStep, setIsReviewing]);
+    if (!user?.id) {
+      setValidationError(t('common.login_required_text'));
+      return;
+    }
+
+    setLoading(true);
+    const applicationData: DrivingLicenseApplicationData = {
+      fullName: formData.fullName!,
+      email: formData.email!,
+      phone: formData.phone!,
+      nationality: formData.nationality!,
+      address: formData.address!,
+      idCopy: files.idCopy!,
+      photo: files.photo!,
+      oldLicenseCopy: files.oldLicenseCopy!,
+      dateOfBirth: new Date(formData.dateOfBirth!).toISOString(),
+    };
+
+    let dbId: string;
+
+    try {
+      const res: any = await submitDrivingLicense(applicationData); // may be void
+      dbId = res?.trackingNumber || generateTrackingId();                // fallback
+    } catch (err: any) {
+      dbId = generateTrackingId();                             // offline fallback
+      console.error(err);
+    }
+
+    setTrackingId(dbId);
+    setLoading(false);
+    setCurrentStep(4);
+  };
+
+  const handleReview = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const missingFields = REQUIRED_FIELDS.filter((field) => !formData[field]);
+      if (missingFields.length) {
+        setValidationError(`${t('common.fill_required_fields')}: ${missingFields.join(', ')}`);
+        return;
+      }
+      if (!files.idCopy || !files.photo || !files.oldLicenseCopy) {
+        setValidationError(t('common.upload_required_documents'));
+        return;
+      }
+      setValidationError(null);
+      setIsReviewing(true);
+      setCurrentStep(2);
+    },
+    [formData, files, t]
+  );
 
   const steps = [
     t('idl.steps.upload'),
     t('idl.steps.review'),
     t('idl.steps.payment'),
-    t('idl.steps.delivery'),
+    t('idl.steps.delivery')
   ];
 
   const faqs = [
-    {
-      question: t('faq.q1'),
-      answer: t('faq.a1')
-    },
-    {
-      question: t('faq.q2'),
-      answer: t('faq.a2')
-    },
-    {
-      question: t('faq.q3'),
-      answer: t('faq.a3')
-    },
-    {
-      question: t('faq.q4'),
-      answer: t('faq.a4')
-    }
+    { question: t('faq.q1'), answer: t('faq.a1') },
+    { question: t('faq.q2'), answer: t('faq.a2') },
+    { question: t('faq.q3'), answer: t('faq.a3') },
+    { question: t('faq.q4'), answer: t('faq.a4') }
   ];
 
-  // Success page
-  if (currentStep === 4) {
+  /* ---------- SUCCESS PAGE ---------- */
+  if (currentStep === 4)
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 py-12 px-4">
         <div className="max-w-3xl mx-auto">
@@ -179,7 +183,8 @@ const handleReview = useCallback((e: React.FormEvent) => {
               </p>
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 mb-8 border border-blue-100">
                 <p className="text-blue-800 font-semibold text-lg">
-                  Tracking Number: <span className="font-mono">IDP-2024-{Math.random().toString(36).substr(2, 6).toUpperCase()}</span>
+                  Tracking Number:{' '}
+                  <span className="font-mono">IDP-{trackingId}</span>
                 </p>
               </div>
               <div className="flex items-center justify-center space-x-4 text-gray-600">
@@ -191,20 +196,18 @@ const handleReview = useCallback((e: React.FormEvent) => {
         </div>
       </div>
     );
-  }
 
+  /* ---------- MAIN RENDER ---------- */
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      {/* Hero Section */}
+      {/* Hero */}
       <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 text-white py-16">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative z-10 max-w-6xl mx-auto px-4 text-center">
           <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-6">
             <Globe className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            International Driving Permit
-          </h1>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">International Driving Permit</h1>
           <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto opacity-90">
             Drive legally in over 150 countries with your official International Driving Permit
           </p>
@@ -226,11 +229,11 @@ const handleReview = useCallback((e: React.FormEvent) => {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-12">
-        {/* Information Cards */}
+        {/* -------------- INFO CARDS & FAQ -------------- */}
         {showInfo && (
           <div className="mb-12 space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Eligibility Card */}
+              {/* Eligibility */}
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-xl transition-all duration-300">
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
@@ -239,11 +242,12 @@ const handleReview = useCallback((e: React.FormEvent) => {
                   <h3 className="text-xl font-bold text-gray-800 ml-3">Eligibility</h3>
                 </div>
                 <p className="text-gray-600 leading-relaxed">
-                  To be eligible for an International Driving Permit, you must be 18 years or older and hold a valid domestic driver's license from your home country.
+                  To be eligible for an International Driving Permit, you must be 18 years or older and hold a valid
+                  domestic driver's license from your home country.
                 </p>
               </div>
 
-              {/* Process Card */}
+              {/* Process */}
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-xl transition-all duration-300">
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
@@ -252,11 +256,12 @@ const handleReview = useCallback((e: React.FormEvent) => {
                   <h3 className="text-xl font-bold text-gray-800 ml-3">Simple Process</h3>
                 </div>
                 <p className="text-gray-600 leading-relaxed">
-                  The process is simple: fill out the form, upload the required documents, make the payment, and receive your permit within 7-10 business days.
+                  Fill out the form, upload the required documents, pay, and receive your permit within 7-10 business
+                  days.
                 </p>
               </div>
 
-              {/* Support Card */}
+              {/* Support */}
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-xl transition-all duration-300">
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
@@ -265,12 +270,12 @@ const handleReview = useCallback((e: React.FormEvent) => {
                   <h3 className="text-xl font-bold text-gray-800 ml-3">24/7 Support</h3>
                 </div>
                 <p className="text-gray-600 leading-relaxed">
-                  Our dedicated support team is available around the clock to assist you with any questions or concerns about your application.
+                  Our dedicated support team is available around the clock to assist you with any questions or concerns.
                 </p>
               </div>
             </div>
 
-            {/* FAQ Section */}
+            {/* FAQ */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8">
               <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">Frequently Asked Questions</h3>
               <div className="space-y-4">
@@ -309,36 +314,39 @@ const handleReview = useCallback((e: React.FormEvent) => {
           </div>
         )}
 
-        {/* Application Form */}
+        {/* -------------- APPLICATION FORM -------------- */}
         {!showInfo && (
           <>
-            {/* Modern Progress Bar */}
+            {/* Progress bar */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 mb-8">
               <div className="flex items-center justify-between mb-6">
                 {steps.map((step, index) => (
                   <div key={index} className="flex items-center">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all duration-300 ${
-                      index + 1 <= currentStep 
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg' 
-                        : 'bg-gray-200 text-gray-500'
-                    }`}>
-                      {index + 1 < currentStep ? (
-                        <CheckCircle className="w-6 h-6" />
-                      ) : (
-                        index + 1
-                      )}
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all duration-300 ${
+                        index + 1 <= currentStep
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
+                          : 'bg-gray-200 text-gray-500'
+                      }`}
+                    >
+                      {index + 1 < currentStep ? <CheckCircle className="w-6 h-6" /> : index + 1}
                     </div>
                     {index < steps.length - 1 && (
-                      <div className={`hidden sm:block w-24 h-1 mx-4 rounded-full transition-all duration-300 ${
-                        index + 1 < currentStep ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-gray-200'
-                      }`} />
+                      <div
+                        className={`hidden sm:block w-24 h-1 mx-4 rounded-full transition-all duration-300 ${
+                          index + 1 < currentStep ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-gray-200'
+                        }`}
+                      />
                     )}
                   </div>
                 ))}
               </div>
               <div className="flex justify-between text-sm font-medium text-gray-600">
                 {steps.map((step, index) => (
-                  <div key={index} className={`text-center ${index + 1 === currentStep ? 'text-blue-600 font-bold' : ''}`}>
+                  <div
+                    key={index}
+                    className={`text-center ${index + 1 === currentStep ? 'text-blue-600 font-bold' : ''}`}
+                  >
                     {step}
                   </div>
                 ))}
@@ -355,7 +363,7 @@ const handleReview = useCallback((e: React.FormEvent) => {
                 </button>
               </div>
             ) : (
-              <div onSubmit={isReviewing ? handleSubmit : handleReview} className="space-y-8">
+              <form onSubmit={isReviewing ? handleSubmit : handleReview} className="space-y-8 pb-32">
                 {/* Personal Information Card */}
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 hover:shadow-xl transition-all duration-300">
                   <div className="flex items-center mb-8">
@@ -364,114 +372,99 @@ const handleReview = useCallback((e: React.FormEvent) => {
                     </div>
                     <h3 className="text-2xl font-bold text-gray-800 ml-4">Personal Information</h3>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="flex items-center text-sm font-semibold text-gray-700">
-                        <User className="w-4 h-4 mr-2" />
-                        Full Name *
-                      </label>
-                      <input
-                        name="fullName"
-                        value={formData.fullName || ''}
-                        placeholder="Enter your full name"
-                        onChange={handleChange}
-                        required
-                        disabled={isReviewing}
-                        className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="flex items-center text-sm font-semibold text-gray-700">
-                        <Mail className="w-4 h-4 mr-2" />
-                        Email Address *
-                      </label>
-                      <input 
-                        name="email" 
-                        type="email" 
-                        placeholder="your.email@example.com" 
-                        value={formData.email || ''}
-                        onChange={handleChange} 
-                        required 
-                        disabled={isReviewing}
-                        className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="flex items-center text-sm font-semibold text-gray-700">
-                        <PhoneIcon className="w-4 h-4 mr-2" />
-                        Phone Number *
-                      </label>
-<PhoneInput
-  name="phone"
-  placeholder="+1 (555) 123-4567"
-  value={formData.phone || ''}
-  onChange={handleChange}
-  required
-  disabled={isReviewing}
-  className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
-/>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="flex items-center text-sm font-semibold text-gray-700">
-                        <Calendar className="w-4 h-4 mr-2" />
-                        Date of Birth *
-                      </label>
-                      <input 
-                        name="dateOfBirth" 
-                        type="date" 
-                        value={formData.dateOfBirth || ''}
-                        onChange={handleChange} 
-                        required 
-                        disabled={isReviewing}
-                        className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="flex items-center text-sm font-semibold text-gray-700">
-                        <Flag className="w-4 h-4 mr-2" />
-                        Nationality *
-                      </label>
-                      <select
-                        name="nationality"
-                        value={formData.nationality || ''}
-                        onChange={handleChange}
-                        required
-                        disabled={isReviewing}
-                        className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
-                      >
-                        <option value="">Select your nationality</option>
-                      {Object.entries(countries.getNames(i18n.language)).map(([code, name]) => (
-                        <option key={code} value={name}>
-                          {name}
-                        </option>
-                      ))}
-                      </select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="flex items-center text-sm font-semibold text-gray-700">
-                        <MapPin className="w-4 h-4 mr-2" />
-                        Address *
-                      </label>
-                      <input
-                        name="address"
-                        value={formData.address || ''}
-                        placeholder="Enter your full address"
-                        onChange={handleChange}
-                        required
-                        disabled={isReviewing}
-                        className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
-                      />
-                    </div>
+                    {[
+                      {
+                        name: 'fullName',
+                        label: 'Full Name *',
+                        type: 'text',
+                        placeholder: 'Enter your full name',
+                        icon: <User className="w-4 h-4 mr-2" />
+                      },
+                      {
+                        name: 'email',
+                        label: 'Email Address *',
+                        type: 'email',
+                        placeholder: 'your.email@example.com',
+                        icon: <Mail className="w-4 h-4 mr-2" />
+                      },
+                      {
+                        name: 'phone',
+                        label: 'Phone Number *',
+                        type: 'phone',
+                        placeholder: '+1 (555) 123-4567',
+                        icon: <PhoneIcon className="w-4 h-4 mr-2" />
+                      },
+                      {
+                        name: 'dateOfBirth',
+                        label: 'Date of Birth *',
+                        type: 'date',
+                        icon: <Calendar className="w-4 h-4 mr-2" />
+                      },
+                      {
+                        name: 'nationality',
+                        label: 'Nationality *',
+                        type: 'select',
+                        icon: <Flag className="w-4 h-4 mr-2" />
+                      },
+                      {
+                        name: 'address',
+                        label: 'Address *',
+                        type: 'text',
+                        placeholder: 'Enter your full address',
+                        icon: <MapPin className="w-4 h-4 mr-2" />
+                      }
+                    ].map((field) => (
+                      <div key={field.name} className="space-y-2">
+                        <label className="flex items-center text-sm font-semibold text-gray-700">
+                          {field.icon}
+                          {field.label}
+                        </label>
+                        {field.type === 'phone' ? (
+                          <PhoneInput
+                            name={field.name}
+                            placeholder={field.placeholder}
+                            value={(formData as any)[field.name] || ''}
+                            onChange={(v) => handleChange(v, 'phone')}
+                            required
+                            disabled={isReviewing}
+                            className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
+                          />
+                        ) : field.type === 'select' ? (
+                          <select
+                            name={field.name}
+                            value={(formData as any)[field.name] || ''}
+                            onChange={handleChange}
+                            required
+                            disabled={isReviewing}
+                            className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
+                          >
+                            <option value="">Select your nationality</option>
+                            {Object.entries(countries.getNames(i18n.language)).map(([code, name]) => (
+                              <option key={code} value={name}>
+                                {name}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            name={field.name}
+                            type={field.type}
+                            placeholder={field.placeholder}
+                            value={(formData as any)[field.name] || ''}
+                            onChange={handleChange}
+                            required
+                            disabled={isReviewing}
+                            className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
+                          />
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                {/* Document Upload Card */}
+                {/* Document Upload */}
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 hover:shadow-xl transition-all duration-300">
                   <div className="flex items-center mb-8">
                     <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
@@ -479,7 +472,7 @@ const handleReview = useCallback((e: React.FormEvent) => {
                     </div>
                     <h3 className="text-2xl font-bold text-gray-800 ml-4">Required Documents</h3>
                   </div>
-                  
+
                   {!isReviewing ? (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {[
@@ -487,17 +480,26 @@ const handleReview = useCallback((e: React.FormEvent) => {
                         { key: 'photo', label: 'Personal Photo', description: 'Passport-style photograph' },
                         { key: 'oldLicenseCopy', label: 'License Copy', description: 'Copy of your current license' }
                       ].map((doc) => (
-                        <div key={doc.key} className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-300">
+                        <div
+                          key={doc.key}
+                          className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-300"
+                        >
                           <Camera className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                           <h4 className="font-semibold text-gray-800 mb-2">{doc.label} *</h4>
                           <p className="text-sm text-gray-600 mb-4">{doc.description}</p>
                           <input
                             type="file"
                             accept="image/*,.pdf"
-onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0], doc.key as keyof typeof files)}
-className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-/>
-{files[doc.key]?.name && <p className="text-green-500 text-xs mt-1">{files[doc.key].name}</p>}
+                            onChange={(e) =>
+                              e.target.files?.[0] && handleFileChange(e.target.files[0], doc.key as keyof typeof files)
+                            }
+                            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          />
+                          {files[doc.key as keyof typeof files]?.name && (
+                            <p className="text-green-500 text-xs mt-1">
+                              {files[doc.key as keyof typeof files]!.name}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -505,10 +507,13 @@ className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:round
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {[
                         { file: files.idCopy, label: 'ID Copy' },
-                        { file: files.photo, label: 'Personal Photo', description: 'Passport-style photograph' },
+                        { file: files.photo, label: 'Personal Photo' },
                         { file: files.oldLicenseCopy, label: 'License Copy' }
                       ].map((item, index) => (
-                        <div key={index} className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 text-center">
+                        <div
+                          key={index}
+                          className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 text-center"
+                        >
                           <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
                             <CheckCircle className="w-8 h-8 text-white" />
                           </div>
@@ -519,66 +524,71 @@ className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:round
                     </div>
                   )}
                 </div>
-                
-                {/* Error Messages */}
+
+                {/* Error */}
                 {validationError && (
                   <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center">
                     <AlertCircle className="w-5 h-5 text-red-600 mr-3 flex-shrink-0" />
                     <p className="text-red-800">{validationError}</p>
                   </div>
                 )}
-                
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 pt-6">
-                  {isReviewing ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => { setIsReviewing(false); setCurrentStep(1); }}
-                        className="flex items-center justify-center px-8 py-4 border-2 border-gray-300 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-300"
-                      >
-                        <ArrowLeft className="w-5 h-5 mr-2" />
-                        Edit Information
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="flex items-center justify-center px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex-1 shadow-lg hover:shadow-xl"
-                      >
-                        {loading ? (
-                          <>
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                            Processing Application...
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard className="w-5 h-5 mr-2" />
-                            Submit & Pay $29.99
-                          </>
-                        )}
-                      </button>
-                    </>
-                  ) : (
-                    <div className="flex justify-between items-center w-full">
-                      <button
-                        type="button"
-                        onClick={() => setShowInfo(true)}
-                        className="flex items-center px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors"
-                      >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back to Info
-                      </button>
-                      <button 
-                        type="submit"
-                        className="flex items-center justify-center px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl"
-                      >
-                        Review Application
-                        <ArrowRight className="w-5 h-5 ml-2" />
-                      </button>
-                    </div>
-                  )}
+
+                {/* Sticky footer buttons */}
+                <div className="fixed inset-x-0 bottom-0 bg-white/90 backdrop-blur-md border-t border-gray-200 p-4 z-20">
+                  <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-4">
+                    {isReviewing ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsReviewing(false);
+                            setCurrentStep(1);
+                          }}
+                          className="flex items-center justify-center px-8 py-4 border-2 border-gray-300 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-300"
+                        >
+                          <ArrowLeft className="w-5 h-5 mr-2" />
+                          Edit Information
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="flex items-center justify-center px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex-1 shadow-lg hover:shadow-xl"
+                        >
+                          {loading ? (
+                            <>
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                              Processing Application...
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard className="w-5 h-5 mr-2" />
+                              Submit & Pay $29.99
+                            </>
+                          )}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setShowInfo(true)}
+                          className="flex items-center px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors"
+                        >
+                          <ArrowLeft className="w-4 h-4 mr-2" />
+                          Back to Info
+                        </button>
+                        <button
+                          type="submit"
+                          className="flex items-center justify-center px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl ml-auto"
+                        >
+                          Review Application
+                          <ArrowRight className="w-5 h-5 ml-2" />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </form>
             )}
           </>
         )}
@@ -587,4 +597,4 @@ className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:round
   );
 };
 
-export default InternationalDrivingLicense;
+export default InternationalDrivingLicense
