@@ -122,18 +122,18 @@ const ApplicationTracking: FC = () => {
         )}
 
         {/* Status Display */}
-        {applicationStatus && applicationStatus.data && (
+        {applicationStatus && (
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
             {/* Status Header */}
-            <div className={`px-6 py-4 border-b border-gray-200 ${getStatusColor(applicationStatus.data.licenseStatus)}`}>
+            <div className={`px-6 py-4 border-b border-gray-200 ${getStatusColor(applicationStatus.application_status)}`}>
               <div className="flex items-center gap-3">
-                {getStatusIcon(applicationStatus.data.licenseStatus)}
+                {getStatusIcon(applicationStatus.application_status)}
                 <div>
                   <h3 className="text-lg font-semibold">
                     {t('tracking.status_title') || 'Application Status'}
                   </h3>
                   <p className="text-sm opacity-80">
-                    Your application is currently {applicationStatus.data.licenseStatus?.toLowerCase()}
+                    Your application is currently {applicationStatus.application_status?.toLowerCase() || 'Pending'}
                   </p>
                 </div>
               </div>
@@ -152,7 +152,7 @@ const ApplicationTracking: FC = () => {
                         {t('tracking.tracking_number') || 'Tracking Number'}
                       </p>
                       <p className="text-lg font-semibold text-gray-800 font-mono">
-                        {applicationStatus.data.trackingNumber}
+                        {applicationStatus.tracking_id}
                       </p>
                     </div>
                   </div>
@@ -166,7 +166,7 @@ const ApplicationTracking: FC = () => {
                         {t('tracking.submission_date') || 'Submission Date'}
                       </p>
                       <p className="text-lg font-semibold text-gray-800">
-                        {new Date(applicationStatus.data.createdAt).toLocaleDateString('en-US', {
+                        {new Date(applicationStatus.created_at).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric'
@@ -179,14 +179,14 @@ const ApplicationTracking: FC = () => {
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="bg-purple-100 rounded-full p-2">
-                      {getStatusIcon(applicationStatus.data.licenseStatus)}
+                      {getStatusIcon(applicationStatus.application_status)}
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-600">
                         {t('tracking.current_status') || 'Current Status'}
                       </p>
                       <p className="text-lg font-semibold text-gray-800 capitalize">
-                        {applicationStatus.data.licenseStatus}
+                        {applicationStatus.application_status || 'Pending'}
                       </p>
                     </div>
                   </div>
@@ -200,13 +200,12 @@ const ApplicationTracking: FC = () => {
                         {t('tracking.application_type') || 'Application Type'}
                       </p>
                       <p className="text-lg font-semibold text-gray-800">
-                        {t('tracking.travel_document') || 'Travel Document'}
+                        international_driving_license_applications
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         )}

@@ -8,11 +8,11 @@ export const useApplication = () => {
   const [trackingNumber, setTrackingNumber] = useState<string | null>(null);
   const [applicationStatus, setApplicationStatus] = useState<any | null>(null);
 
-  const submitDrivingLicense = async (data: DrivingLicenseApplicationData) => {
+  const submitDrivingLicense = async (data: DrivingLicenseApplicationData, trackingId: string) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await submitDrivingLicenseApplication(data);
+      const response = await submitDrivingLicenseApplication(data, trackingId);
       setTrackingNumber(response.trackingNumber);
     } catch (err) {
       setError('Failed to submit application. Please try again.');
@@ -39,7 +39,13 @@ export const useApplication = () => {
     setError(null);
     try {
       const response = await trackApplication(trackingId);
-      setApplicationStatus(response);
+      if (response && response.length > 0) {
+        setApplicationStatus(response[0]); // Set to the first item in the array
+      } else {
+        // Handle case where no application is found or response is empty
+        setApplicationStatus(null); // Or some other indicator
+        setError('Application not found. Please check the tracking number.');
+      }
     } catch (err) {
       setError('Failed to track application. Please check the tracking number and try again.');
     } finally {

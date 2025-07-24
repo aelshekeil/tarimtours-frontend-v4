@@ -57,7 +57,8 @@ api.interceptors.request.use((config) => {
 });
 
 export const submitDrivingLicenseApplication = async (
-  data: DrivingLicenseApplicationData
+  data: DrivingLicenseApplicationData,
+  trackingId: string
 ) => {
   const { idCopy, photo, oldLicenseCopy, fullName, email, phone, dateOfBirth, nationality, address } = data;
 
@@ -67,11 +68,8 @@ export const submitDrivingLicenseApplication = async (
       error?: string;
     }
 
-  // Generate a tracking ID before inserting into the database
-  const trackingId = Math.random().toString(36).substring(2, 4).toUpperCase() + Math.floor(1000 + Math.random() * 9000).toString();
-
   try {
-    // Prepare the request body including the generated tracking_id
+    // Prepare the request body including the provided tracking_id
     const requestBody = {
       fullName,
       email,
@@ -79,7 +77,7 @@ export const submitDrivingLicenseApplication = async (
       dateOfBirth,
       nationality,
       address,
-      tracking_id: trackingId, // Include tracking_id in the request body
+      tracking_id: trackingId, // Use the provided tracking_id
     };
 
     console.log('Request body:', requestBody);
@@ -124,12 +122,16 @@ export const submitDrivingLicenseApplication = async (
       oldLicenseCopyUrl: oldLicenseCopyUrl,
     });
 
-    // Extract trackingNumber from the response (assuming the backend returns it)
-    const result: SubmitDrivingLicenseResponse = {
-      trackingNumber: response.data.trackingNumber,
-      error: response.data.error,
-    };
-    return result;
+    // Log the backend response for debugging
+    console.log('Backend response:', response.data);
+
+    // Extract the tracking number from the backend response (supporting both trackingNumber and tracking_id)
+    let trackingNumber = response.data.trackingNumber || response.data.tracking_id;
+    // If backend does not return a tracking number, use the one provided
+    if (!trackingNumber) {
+      trackingNumber = trackingId;
+    }
+    return { trackingNumber };
   } catch (error: any) {
     console.error(error);
     throw new Error(error.message || 'Failed to submit application. Please try again.');
@@ -148,6 +150,9 @@ export const submitVisaApplication = async (data: VisaApplicationData) => {
 };
 
 export const trackApplication = async (trackingNumber: string) => {
-  const response = await api.get(`/track?trackingNumber=${trackingNumber}`);
+  // Supabase requires filters to be formatted as column=operator.value
+  // For string values, it's often column=eq.value
+  // The correct endpoint is likely 'international_driving_license_applications'
+  const response = await api.get(`/international_driving_license_applications?tracking_id=eq.${trackingNumber}`);
   return response.data;
 };

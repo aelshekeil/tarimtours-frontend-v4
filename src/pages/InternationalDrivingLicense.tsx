@@ -116,13 +116,15 @@ const InternationalDrivingLicense: FC = () => {
       dateOfBirth: new Date(formData.dateOfBirth!).toISOString(),
     };
 
+    // Generate tracking ID in the UI
+    const generatedTrackingId = generateTrackingId();
     let dbId: string;
 
     try {
-      const res: any = await submitDrivingLicense(applicationData); // may be void
-      dbId = res?.trackingNumber || generateTrackingId();                // fallback
+      const res: any = await submitDrivingLicense(applicationData, generatedTrackingId); // pass trackingId
+      dbId = res?.trackingNumber || generatedTrackingId;
     } catch (err: any) {
-      dbId = generateTrackingId();                             // offline fallback
+      dbId = generatedTrackingId;
       console.error(err);
     }
 
@@ -184,7 +186,7 @@ const InternationalDrivingLicense: FC = () => {
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 mb-8 border border-blue-100">
                 <p className="text-blue-800 font-semibold text-lg">
                   Tracking Number:{' '}
-                  <span className="font-mono">IDP-{trackingId}</span>
+                  <span className="font-mono">{trackingId}</span>
                 </p>
               </div>
               <div className="flex items-center justify-center space-x-4 text-gray-600">

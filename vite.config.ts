@@ -19,7 +19,7 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     hmr: {
-      clientPort: 443,
+      // clientPort: 443, // Removed to use the same port as the server
     },
     watch: {
       usePolling: true,
@@ -33,5 +33,3 @@ export default defineConfig({
     allowedHosts: ["*"]
   },
 })
-
-
