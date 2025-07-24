@@ -2,7 +2,9 @@ import { FC, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { VisaApplicationData, submitVisaApplication } from '../services/applicationApi';
+import { generateTrackingId } from '../utils/helpers';
 import Dropzone from '../components/forms/Dropzone';
+import MultiFileDropzone from '../components/forms/MultiFileDropzone';
 import ProgressBar from '../components/common/ProgressBar';
 import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
@@ -27,7 +29,7 @@ const VisaApplicationForm: FC = () => {
   const [validationError, setValidationError] = useState<string | null>(null);
   const { isLoggedIn, user } = useAuth();
 
-  const handleFileChange = useCallback((file: File, field: keyof typeof files) => {
+  const handleFileChange = useCallback((file: File | File[], field: keyof typeof files) => {
     setFiles((prev: Partial<typeof files>) => ({ ...prev, [field]: file }));
   }, []);
 
@@ -78,8 +80,9 @@ const VisaApplicationForm: FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await submitVisaApplication(applicationData);
-      setTrackingNumber(response.data.trackingNumber);
+      const trackingId = generateTrackingId();
+      const response = await submitVisaApplication(applicationData, trackingId);
+      setTrackingNumber(response.tracking_id || trackingId);
       setCurrentStep(4);
     } catch (err: any) {
       setError(err.message || t('common.submission_failed'));
@@ -272,7 +275,7 @@ const VisaApplicationForm: FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Dropzone onFileChange={(file: File) => handleFileChange(file, 'passportCopy')} label={t('visa_application.passport_copy')} />
                 <Dropzone onFileChange={(file: File) => handleFileChange(file, 'photo')} label={t('visa_application.photo')} />
-                <Dropzone onFileChange={(file: File) => handleFileChange(file, 'additionalDocuments')} label={t('common.additional_documents')} />
+                <MultiFileDropzone onFileChange={(files: File[]) => handleFileChange(files, 'additionalDocuments')} label={t('common.additional_documents')} />
               </div>
             </div>
           </div>

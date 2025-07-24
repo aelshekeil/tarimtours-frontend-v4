@@ -48,13 +48,10 @@ export interface TripComHotel {
 }
 
 class TripComIntegrationService {
-  private apiKey: string;
-  private baseUrl: string;
-
   constructor() {
     // These would typically come from environment variables
-    this.apiKey = import.meta.env.VITE_TRIPCOM_API_KEY || '';
-    this.baseUrl = import.meta.env.VITE_TRIPCOM_API_URL || 'https://api.trip.com/v1';
+    // this.apiKey = import.meta.env.VITE_TRIPCOM_API_KEY || '';
+    // this.baseUrl = import.meta.env.VITE_TRIPCOM_API_URL || 'https://api.trip.com/v1';
   }
 
   async searchHotels(searchRequest: TripComSearchRequest): Promise<TripComHotel[]> {

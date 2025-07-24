@@ -1,5 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
-import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';
 import { createClient } from '@supabase/supabase-js';
 
 const API_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -62,12 +61,7 @@ export const submitDrivingLicenseApplication = async (
 ) => {
   const { idCopy, photo, oldLicenseCopy, fullName, email, phone, dateOfBirth, nationality, address } = data;
 
-  // Interface for the response from submitDrivingLicenseApplication
-  interface SubmitDrivingLicenseResponse {
-      trackingNumber?: string;
-      error?: string;
-    }
-
+  
   try {
     // Prepare the request body including the provided tracking_id
     const requestBody = {
@@ -138,14 +132,46 @@ export const submitDrivingLicenseApplication = async (
   }
 };
 
-export const submitVisaApplication = async (data: VisaApplicationData) => {
+export const submitVisaApplication = async (data: VisaApplicationData, trackingId: string) => {
   const { passportCopy, photo, additionalDocuments, ...otherData } = data;
 
-  // In a real Supabase implementation, you would handle file uploads separately
-  // and then store the URLs in the database.
-  // This is a simplified example assuming the API handles it.
+  const uploadFile = async (file: File, path: string) => {
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('applications')
+      .upload(`${trackingId}/${path}`, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
 
-  const response = await api.post('/visa-applications', otherData);
+    if (uploadError) {
+      console.error('Error uploading file:', uploadError);
+      throw uploadError;
+    }
+    return `${API_URL}/storage/v1/object/public/${uploadData.path}`;
+  };
+
+  const [passportCopyUrl, photoUrl] = await Promise.all([
+    uploadFile(passportCopy, 'passportCopy'),
+    uploadFile(photo, 'photo'),
+  ]);
+
+  let additionalDocumentsUrls: string[] = [];
+  if (additionalDocuments && additionalDocuments.length > 0) {
+    additionalDocumentsUrls = await Promise.all(
+      additionalDocuments.map((file, index) =>
+        uploadFile(file, `additionalDocument_${index}`)
+      )
+    );
+  }
+
+  const response = await api.post('/visa_applications', {
+    ...otherData,
+    tracking_id: trackingId,
+    passport_copy_url: [passportCopyUrl],
+    photo_url: [photoUrl],
+    additional_documents_urls: additionalDocumentsUrls || [],
+  });
+
   return response.data;
 };
 

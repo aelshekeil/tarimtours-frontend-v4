@@ -1,9 +1,6 @@
 import { supabase } from './supabaseClient';
 import {
   AuthResponse,
-  TravelPackage,
-  ESIMProduct,
-  TravelAccessory,
   ApplicationSubmission,
 } from '../utils/types';
 
@@ -26,7 +23,7 @@ class SupabaseAPI {
   }
 
   // Add generic post method for compatibility
-  async post<T>(endpoint: string, data: any): Promise<T> {
+  async post<T>(endpoint: string, _data: any): Promise<T> {
     // This is a simplified implementation for compatibility
     // In a real scenario, you'd map endpoints to appropriate Supabase calls
     throw new Error(`Generic post method not implemented for endpoint: ${endpoint}`);
@@ -79,7 +76,7 @@ class SupabaseAPI {
     };
   }
 
-  async updateProfile(userId: string, data: { username?: string; email?: string }): Promise<any> {
+  async updateProfile(_userId: string, data: { username?: string; email?: string }): Promise<any> {
     const { error } = await supabase.auth.updateUser({
       email: data.email,
       data: {

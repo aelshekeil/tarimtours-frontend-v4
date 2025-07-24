@@ -2,24 +2,20 @@
 import { FC, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
-import { useApplication } from '../hooks/useApplication';
-import { DrivingLicenseApplicationData } from '../services/applicationApi';
+import { DrivingLicenseApplicationData, submitDrivingLicenseApplication } from '../services/applicationApi';
+import AuthModal from '../components/common/AuthModal';
+import Dropzone from '../components/forms/Dropzone';
 import countries from 'i18n-iso-countries';
 import enLocale from 'i18n-iso-countries/langs/en.json';
 import arLocale from 'i18n-iso-countries/langs/ar.json';
 import PhoneInput from 'react-phone-number-input';
+import { E164Number } from 'libphonenumber-js/core';
 import 'react-phone-number-input/style.css';
 import {
   CheckCircle,
   Truck,
-  FileText,
   AlertCircle,
   User,
-  Mail,
-  Phone as PhoneIcon,
-  Calendar,
-  Flag,
-  MapPin,
   Camera,
   ArrowLeft,
   CreditCard,
@@ -28,10 +24,8 @@ import {
   Clock,
   Globe,
   HelpCircle,
-  Star,
   Zap,
   Award,
-  Info,
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
@@ -52,13 +46,13 @@ const InternationalDrivingLicense: FC = () => {
   const [isReviewing, setIsReviewing] = useState(false);
   const [showInfo, setShowInfo] = useState(true);
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
-  const [formData, setFormData] = useState<Partial<DrivingLicenseApplicationData>>({ address: '' });
+  const [formData, setFormData] = useState<Partial<DrivingLicenseApplicationData & { nationality: string }>>({ address: '' });
   const [files, setFiles] = useState<{ idCopy?: File; photo?: File; oldLicenseCopy?: File }>({});
   const [loading, setLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [trackingId, setTrackingId] = useState(''); // NEW
+  const [trackingId, setTrackingId] = useState('');
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const { isLoggedIn, user } = useAuth();
-  const { submitDrivingLicense } = useApplication();
 
   const handleFileChange = useCallback(
     (file: File, field: keyof typeof files) => setFiles((prev) => ({ ...prev, [field]: file })),
@@ -66,11 +60,14 @@ const InternationalDrivingLicense: FC = () => {
   );
 
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | string, name?: string) => {
+    (
+      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | E164Number | string,
+      name?: keyof DrivingLicenseApplicationData | 'nationality'
+    ) => {
       if (name === 'phone' && typeof e === 'string') {
         setFormData((prev) => ({ ...prev, phone: e }));
-      } else if (typeof e === 'object' && 'target' in e) {
-        const { name: targetName, value } = e.target;
+      } else if (typeof e === 'object' && e && 'target' in e) {
+        const { name: targetName, value } = e.target as HTMLInputElement | HTMLSelectElement;
         setFormData((prev) => ({ ...prev, [targetName]: value }));
       }
     },
@@ -108,29 +105,30 @@ const InternationalDrivingLicense: FC = () => {
       fullName: formData.fullName!,
       email: formData.email!,
       phone: formData.phone!,
+      dateOfBirth: new Date(formData.dateOfBirth!).toISOString(),
       nationality: formData.nationality!,
       address: formData.address!,
       idCopy: files.idCopy!,
       photo: files.photo!,
       oldLicenseCopy: files.oldLicenseCopy!,
-      dateOfBirth: new Date(formData.dateOfBirth!).toISOString(),
     };
 
     // Generate tracking ID in the UI
     const generatedTrackingId = generateTrackingId();
-    let dbId: string;
 
     try {
-      const res: any = await submitDrivingLicense(applicationData, generatedTrackingId); // pass trackingId
-      dbId = res?.trackingNumber || generatedTrackingId;
+      const res: any = await submitDrivingLicenseApplication(applicationData, generatedTrackingId);
+      const dbId = res?.trackingNumber || generatedTrackingId;
+      setTrackingId(dbId);
+      setLoading(false);
+      setCurrentStep(4);
     } catch (err: any) {
-      dbId = generatedTrackingId;
-      console.error(err);
+      console.error('Application submission failed:', err);
+      setLoading(false);
+      setValidationError(
+        err.message || 'Failed to submit application. Please check your information and try again.'
+      );
     }
-
-    setTrackingId(dbId);
-    setLoading(false);
-    setCurrentStep(4);
   };
 
   const handleReview = useCallback(
@@ -322,7 +320,7 @@ const InternationalDrivingLicense: FC = () => {
             {/* Progress bar */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 mb-8">
               <div className="flex items-center justify-between mb-6">
-                {steps.map((step, index) => (
+                {steps.map((_step, index) => (
                   <div key={index} className="flex items-center">
                     <div
                       className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all duration-300 ${
@@ -344,187 +342,136 @@ const InternationalDrivingLicense: FC = () => {
                 ))}
               </div>
               <div className="flex justify-between text-sm font-medium text-gray-600">
-                {steps.map((step, index) => (
+                {steps.map((_step, index) => (
                   <div
                     key={index}
                     className={`text-center ${index + 1 === currentStep ? 'text-blue-600 font-bold' : ''}`}
                   >
-                    {step}
+                    {steps[index]}
                   </div>
                 ))}
               </div>
             </div>
 
             {!isLoggedIn ? (
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-12 text-center">
-                <AlertCircle className="w-20 h-20 text-orange-500 mx-auto mb-6" />
-                <h3 className="text-3xl font-bold text-gray-800 mb-4">Login Required</h3>
-                <p className="text-gray-600 mb-8 text-lg">Please log in to continue with your application</p>
-                <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-10 py-4 rounded-full font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl">
-                  Login to Continue
-                </button>
-              </div>
+              <>
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-12 text-center">
+                  <AlertCircle className="w-20 h-20 text-orange-500 mx-auto mb-6" />
+                  <h3 className="text-3xl font-bold text-gray-800 mb-4">Login Required</h3>
+                  <p className="text-gray-600 mb-8 text-lg">Please log in to continue with your application</p>
+                  <button
+                    onClick={() => setIsAuthModalOpen(true)}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-10 py-4 rounded-full font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
+                    Login to Continue
+                  </button>
+                </div>
+                <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+              </>
             ) : (
               <form onSubmit={isReviewing ? handleSubmit : handleReview} className="space-y-8 pb-32">
-                {/* Personal Information Card */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 hover:shadow-xl transition-all duration-300">
-                  <div className="flex items-center mb-8">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-                      <User className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-800 ml-4">Personal Information</h3>
-                  </div>
-
+                {/* Personal Information Section */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                    <User className="w-6 h-6 text-blue-600 mr-3" />
+                    Personal Information
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {[
-                      {
-                        name: 'fullName',
-                        label: 'Full Name *',
-                        type: 'text',
-                        placeholder: 'Enter your full name',
-                        icon: <User className="w-4 h-4 mr-2" />
-                      },
-                      {
-                        name: 'email',
-                        label: 'Email Address *',
-                        type: 'email',
-                        placeholder: 'your.email@example.com',
-                        icon: <Mail className="w-4 h-4 mr-2" />
-                      },
-                      {
-                        name: 'phone',
-                        label: 'Phone Number *',
-                        type: 'phone',
-                        placeholder: '+1 (555) 123-4567',
-                        icon: <PhoneIcon className="w-4 h-4 mr-2" />
-                      },
-                      {
-                        name: 'dateOfBirth',
-                        label: 'Date of Birth *',
-                        type: 'date',
-                        icon: <Calendar className="w-4 h-4 mr-2" />
-                      },
-                      {
-                        name: 'nationality',
-                        label: 'Nationality *',
-                        type: 'select',
-                        icon: <Flag className="w-4 h-4 mr-2" />
-                      },
-                      {
-                        name: 'address',
-                        label: 'Address *',
-                        type: 'text',
-                        placeholder: 'Enter your full address',
-                        icon: <MapPin className="w-4 h-4 mr-2" />
-                      }
-                    ].map((field) => (
-                      <div key={field.name} className="space-y-2">
-                        <label className="flex items-center text-sm font-semibold text-gray-700">
-                          {field.icon}
-                          {field.label}
-                        </label>
-                        {field.type === 'phone' ? (
-                          <PhoneInput
-                            name={field.name}
-                            placeholder={field.placeholder}
-                            value={(formData as any)[field.name] || ''}
-                            onChange={(v) => handleChange(v, 'phone')}
-                            required
-                            disabled={isReviewing}
-                            className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
-                          />
-                        ) : field.type === 'select' ? (
-                          <select
-                            name={field.name}
-                            value={(formData as any)[field.name] || ''}
-                            onChange={handleChange}
-                            required
-                            disabled={isReviewing}
-                            className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
-                          >
-                            <option value="">Select your nationality</option>
-                            {Object.entries(countries.getNames(i18n.language)).map(([code, name]) => (
-                              <option key={code} value={name}>
-                                {name}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            name={field.name}
-                            type={field.type}
-                            placeholder={field.placeholder}
-                            value={(formData as any)[field.name] || ''}
-                            onChange={handleChange}
-                            required
-                            disabled={isReviewing}
-                            className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 disabled:bg-gray-50 disabled:text-gray-500 hover:border-gray-300"
-                          />
-                        )}
-                      </div>
-                    ))}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                      <input 
+                        name="fullName" 
+                        placeholder="Enter your full name" 
+                        value={formData.fullName || ''}
+                        onChange={handleChange} 
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white" 
+                        required 
+                        disabled={isReviewing}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                      <input 
+                        name="email" 
+                        type="email" 
+                        placeholder="your.email@example.com" 
+                        value={formData.email || ''}
+                        onChange={handleChange} 
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white" 
+                        required 
+                        disabled={isReviewing}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                      <PhoneInput
+                        name="phone"
+                        placeholder="+1 (555) 123-4567"
+                        value={formData.phone}
+                        onChange={(value) => handleChange(value || '', 'phone')}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                        required
+                        disabled={isReviewing}
+                        defaultCountry="US"
+                        international
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                      <input 
+                        name="dateOfBirth" 
+                        type="date" 
+                        value={formData.dateOfBirth || ''}
+                        onChange={handleChange} 
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white" 
+                        required 
+                        disabled={isReviewing}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nationality</label>
+                      <select
+                        name="nationality"
+                        value={formData.nationality || ''}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                        required
+                        disabled={isReviewing}
+                      >
+                        <option value="">Select your nationality</option>
+                        {Object.entries(countries.getNames(i18n.language === 'ar' ? 'ar' : 'en')).map(([code, name]) => (
+                          <option key={code} value={name}>
+                            {name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                      <input 
+                        name="address" 
+                        placeholder="Enter your full address" 
+                        value={formData.address || ''}
+                        onChange={handleChange} 
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white" 
+                        required 
+                        disabled={isReviewing}
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Document Upload */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 hover:shadow-xl transition-all duration-300">
-                  <div className="flex items-center mb-8">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                      <Camera className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-800 ml-4">Required Documents</h3>
+                {/* Document Upload Section */}
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-100">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                    <Camera className="w-6 h-6 text-green-600 mr-3" />
+                    Required Documents
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Dropzone onFileChange={(file: File) => handleFileChange(file, 'idCopy')} label="ID Copy" />
+                    <Dropzone onFileChange={(file: File) => handleFileChange(file, 'photo')} label="Personal Photo" />
+                    <Dropzone onFileChange={(file: File) => handleFileChange(file, 'oldLicenseCopy')} label="License Copy" />
                   </div>
-
-                  {!isReviewing ? (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {[
-                        { key: 'idCopy', label: 'ID Copy', description: 'Clear photo of your valid ID' },
-                        { key: 'photo', label: 'Personal Photo', description: 'Passport-style photograph' },
-                        { key: 'oldLicenseCopy', label: 'License Copy', description: 'Copy of your current license' }
-                      ].map((doc) => (
-                        <div
-                          key={doc.key}
-                          className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-300"
-                        >
-                          <Camera className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                          <h4 className="font-semibold text-gray-800 mb-2">{doc.label} *</h4>
-                          <p className="text-sm text-gray-600 mb-4">{doc.description}</p>
-                          <input
-                            type="file"
-                            accept="image/*,.pdf"
-                            onChange={(e) =>
-                              e.target.files?.[0] && handleFileChange(e.target.files[0], doc.key as keyof typeof files)
-                            }
-                            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                          />
-                          {files[doc.key as keyof typeof files]?.name && (
-                            <p className="text-green-500 text-xs mt-1">
-                              {files[doc.key as keyof typeof files]!.name}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {[
-                        { file: files.idCopy, label: 'ID Copy' },
-                        { file: files.photo, label: 'Personal Photo' },
-                        { file: files.oldLicenseCopy, label: 'License Copy' }
-                      ].map((item, index) => (
-                        <div
-                          key={index}
-                          className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 text-center"
-                        >
-                          <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <CheckCircle className="w-8 h-8 text-white" />
-                          </div>
-                          <p className="font-semibold text-green-800 mb-2">{item.label}</p>
-                          <p className="text-sm text-green-600">{item.file?.name || 'Uploaded'}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
                 {/* Error */}

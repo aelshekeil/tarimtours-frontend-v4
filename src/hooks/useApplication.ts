@@ -1,53 +1,51 @@
 import { useState } from 'react';
-import { submitDrivingLicenseApplication, submitVisaApplication, trackApplication, DrivingLicenseApplicationData, VisaApplicationData } from '../services/applicationApi';
-import axios from 'axios';
+import { supabase } from '../services/supabaseClient'; // Adjust import path as needed
+
+interface ApplicationStatus {
+  tracking_id: string;
+  application_status: string;
+  created_at: string;
+  // Add other fields as needed based on your database schema
+  [key: string]: any;
+}
 
 export const useApplication = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [trackingNumber, setTrackingNumber] = useState<string | null>(null);
-  const [applicationStatus, setApplicationStatus] = useState<any | null>(null);
+  const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus | null>(null);
 
-  const submitDrivingLicense = async (data: DrivingLicenseApplicationData, trackingId: string) => {
+  const track = async (trackingId: string, tableName: string) => {
     setLoading(true);
     setError(null);
-    try {
-      const response = await submitDrivingLicenseApplication(data, trackingId);
-      setTrackingNumber(response.trackingNumber);
-    } catch (err) {
-      setError('Failed to submit application. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    setApplicationStatus(null);
 
-  const submitVisa = async (data: VisaApplicationData) => {
-    setLoading(true);
-    setError(null);
     try {
-      const response = await submitVisaApplication(data);
-      setTrackingNumber(response.trackingNumber);
-    } catch (err) {
-      setError('Failed to submit application. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+      // Query the specified table for the tracking ID
+      const { data, error: queryError } = await supabase
+        .from(tableName)
+        .select('*')
+        .eq('tracking_id', trackingId)
+        .single();
 
-  const track = async (trackingId: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await trackApplication(trackingId);
-      if (response && response.length > 0) {
-        setApplicationStatus(response[0]); // Set to the first item in the array
-      } else {
-        // Handle case where no application is found or response is empty
-        setApplicationStatus(null); // Or some other indicator
-        setError('Application not found. Please check the tracking number.');
+      if (queryError) {
+        if (queryError.code === 'PGRST116') {
+          // No rows returned
+          setError(`No application found with tracking ID "${trackingId}" in the selected service type. Please check your tracking ID and ensure you've selected the correct service type.`);
+        } else {
+          setError(`Error searching for application: ${queryError.message}`);
+        }
+        return;
       }
+
+      if (!data) {
+        setError(`No application found with tracking ID "${trackingId}" in the selected service type.`);
+        return;
+      }
+
+      setApplicationStatus(data);
     } catch (err) {
-      setError('Failed to track application. Please check the tracking number and try again.');
+      setError('An unexpected error occurred. Please try again.');
+      console.error('Tracking error:', err);
     } finally {
       setLoading(false);
     }
@@ -56,10 +54,7 @@ export const useApplication = () => {
   return {
     loading,
     error,
-    trackingNumber,
     applicationStatus,
-    submitDrivingLicense,
-    submitVisa,
     track,
   };
 };

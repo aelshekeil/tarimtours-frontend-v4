@@ -21,10 +21,17 @@ export const formatDate = (date: string | Date): string => {
   }).format(new Date(date));
 };
 
-export const generateTrackingId = (prefix: string): string => {
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substr(2, 5);
-  return `${prefix.toUpperCase()}-${timestamp}-${random}`.toUpperCase();
+export const generateTrackingId = (): string => {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numbers = '0123456789';
+  let result = '';
+  for (let i = 0; i < 2; i++) {
+    result += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+  for (let i = 0; i < 4; i++) {
+    result += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  }
+  return result;
 };
 
 export const validateEmail = (email: string): boolean => {
@@ -85,4 +92,3 @@ export const SERVICE_TYPES = {
 export const cn = (...classes: (string | undefined | null | false)[]): string => {
   return classes.filter(Boolean).join(' ');
 };
-
