@@ -8,8 +8,9 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 # Install ALL dependencies (including devDependencies)
-RUN npm install -g pnpm && \
-    pnpm install --frozen-lockfile
+RUN npm install -g npm@latest && \
+    npm install -g pnpm && \
+    pnpm install --no-frozen-lockfile
 
 # Copy application files
 COPY . .
