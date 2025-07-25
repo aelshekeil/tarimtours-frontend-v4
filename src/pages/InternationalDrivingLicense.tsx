@@ -1,6 +1,7 @@
 // InternationalDrivingLicense.tsx
-import { FC, useState, useCallback } from 'react';
+import React, { FC, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { DrivingLicenseApplicationData, submitDrivingLicenseApplication } from '../services/applicationApi';
 import AuthModal from '../components/common/AuthModal';
@@ -27,7 +28,8 @@ import {
   Zap,
   Award,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Car
 } from 'lucide-react';
 
 const REQUIRED_FIELDS: (keyof Omit<DrivingLicenseApplicationData, 'idCopy' | 'photo' | 'oldLicenseCopy'>)[] =
@@ -42,6 +44,7 @@ const generateTrackingId = () =>
 
 const InternationalDrivingLicense: FC = () => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isReviewing, setIsReviewing] = useState(false);
   const [showInfo, setShowInfo] = useState(true);
@@ -52,7 +55,36 @@ const InternationalDrivingLicense: FC = () => {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [trackingId, setTrackingId] = useState('');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<any>(null);
   const { isLoggedIn, user } = useAuth();
+
+  // Load selected service from localStorage on component mount
+  React.useEffect(() => {
+    const storedService = localStorage.getItem('selectedDrivingLicenseService');
+    if (storedService) {
+      const serviceData = JSON.parse(storedService);
+      // Add the appropriate icon based on service type
+      let icon;
+      switch (serviceData.id) {
+        case 'standard-idl':
+          icon = <Car className="w-8 h-8" />;
+          break;
+        case 'premium-idl':
+          icon = <Shield className="w-8 h-8" />;
+          break;
+        case 'express-idl':
+          icon = <Clock className="w-8 h-8" />;
+          break;
+        case 'global-idl':
+          icon = <Globe className="w-8 h-8" />;
+          break;
+        default:
+          icon = <Car className="w-8 h-8" />;
+      }
+      setSelectedService({ ...serviceData, icon });
+      setShowInfo(false); // Skip info section if service is already selected
+    }
+  }, []);
 
   const handleFileChange = useCallback(
     (file: File, field: keyof typeof files) => setFiles((prev) => ({ ...prev, [field]: file })),
@@ -304,7 +336,7 @@ const InternationalDrivingLicense: FC = () => {
 
             <div className="text-center">
               <button
-                onClick={() => setShowInfo(false)}
+                onClick={() => navigate('/driving-license-service-selection')}
                 className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl"
               >
                 Start Your Application
@@ -317,6 +349,35 @@ const InternationalDrivingLicense: FC = () => {
         {/* -------------- APPLICATION FORM -------------- */}
         {!showInfo && (
           <>
+            {/* Selected Service Display */}
+            {selectedService && (
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl shadow-lg border border-blue-200 p-6 mb-8">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="text-blue-600 mr-4">{selectedService.icon}</div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-800">{selectedService.name}</h3>
+                      <p className="text-gray-600">{selectedService.description}</p>
+                      <div className="flex items-center mt-2 space-x-4 text-sm text-gray-600">
+                        <span className="flex items-center">
+                          <Clock className="w-4 h-4 mr-1" />
+                          {selectedService.processingTime}
+                        </span>
+                        <span className="flex items-center">
+                          <Shield className="w-4 h-4 mr-1" />
+                          Valid for {selectedService.validity}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-blue-600">${selectedService.price}</div>
+                    <div className="text-gray-500">{selectedService.currency}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Progress bar */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 mb-8">
               <div className="flex items-center justify-between mb-6">
@@ -511,7 +572,7 @@ const InternationalDrivingLicense: FC = () => {
                           ) : (
                             <>
                               <CreditCard className="w-5 h-5 mr-2" />
-                              Submit & Pay $29.99
+                              Submit & Pay ${selectedService?.price || '29.99'}
                             </>
                           )}
                         </button>

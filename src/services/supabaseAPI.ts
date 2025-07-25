@@ -263,6 +263,73 @@ class SupabaseAPI {
     };
   }
 
+  async submitDrivingLicenseApplication(applicationData: any, files?: File[]): Promise<ApplicationSubmission> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User must be authenticated');
+    }
+
+    // Generate tracking ID
+    const trackingId = `DRIVING-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Handle file uploads if provided
+    let fileUrls: string[] = [];
+    if (files) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileName = `driving-applications/${user.id}/${trackingId}/${file.name}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('applications')
+          .upload(fileName, file);
+
+        if (uploadError) {
+          throw new Error(`Failed to upload file: ${uploadError.message}`);
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('applications')
+          .getPublicUrl(fileName);
+
+        fileUrls.push(publicUrl);
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('driving_license_applications')
+      .insert({
+        full_name: applicationData.fullName,
+        email: applicationData.email,
+        payment_status: applicationData.paymentStatus || 'pending',
+        tracking_id: trackingId,
+        application_data: applicationData,
+        files_urls: fileUrls,
+        user_id: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    // Transform to match Strapi structure
+    return {
+      id: data.id,
+      attributes: {
+        fullName: data.full_name,
+        email: data.email,
+        paymentStatus: data.payment_status,
+        trackingId: data.tracking_id,
+        applicationData: data.application_data,
+        filesUrls: data.files_urls,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      },
+    };
+  }
+
   async submitInternationalDrivingLicenseApplication(
     applicationData: { fullName: string; email: string; paymentStatus: 'pending' | 'completed' | 'failed' },
     files: { licenseFront: File; passportPage: File; personalPhoto: File }

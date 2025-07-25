@@ -19,8 +19,6 @@ import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import Image from 'lucide-react/dist/esm/icons/image';
-import Download from 'lucide-react/dist/esm/icons/download';
-import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 
 // Application types configuration
 const APPLICATION_TYPES: {

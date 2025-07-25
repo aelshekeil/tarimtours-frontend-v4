@@ -1,24 +1,27 @@
 import { useState, FC, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, User, ShoppingCart, Globe, ChevronDown, LogOut, UserCircle } from 'lucide-react';
-import AuthModal from '../common/AuthModal';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from "../../hooks/useAuth";
 import { useCart } from "../../hooks/useCart";
 import CartSidebar from "../common/CartSidebar";
 import useMobile from "../../hooks/use-mobile";
 
-const Header: FC = () => {
+// Define the props interface for the Header component
+interface HeaderProps {
+  user: { id: string; username: string; email: string } | null;
+  onAuthClick: () => void;
+  onLogout: () => void;
+}
+
+const Header: FC<HeaderProps> = ({ user, onAuthClick, onLogout }) => {
   const { t, i18n } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isShopMenuOpen, setIsShopMenuOpen] = useState(false);
   const [isServicesMenuOpen, setIsServicesMenuOpen] = useState(false);
   const [isMobileShopOpen, setIsMobileShopOpen] = useState(false);
   const [isMobileServicesOpen, setIsMobileServicesOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { isLoggedIn, user } = useAuth();
   const { getTotalItems } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const location = useLocation();
@@ -69,12 +72,12 @@ const Header: FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('jwt');
-    window.dispatchEvent(new CustomEvent('authChange'));
-    setIsUserMenuOpen(false);
-  };
+  // const handleLogout = () => { // Removed as onLogout is now a prop
+  //   localStorage.removeItem('user');
+  //   localStorage.removeItem('jwt');
+  //   window.dispatchEvent(new CustomEvent('authChange'));
+  //   setIsUserMenuOpen(false);
+  // };
 
   const getLinkClass = (path: string) => {
     return `relative font-medium transition-all duration-300 group ${
@@ -140,9 +143,9 @@ const Header: FC = () => {
                     <div className="px-4 py-2">
                       <h3 className="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">{t("common.shop_products")}</h3>
                     </div>
-                    <Link 
-                      to="/esim" 
-                      className={`block w-full ${i18n.language === 'ar' ? 'text-right' : 'text-left'} px-5 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all duration-300 group border-l-3 border-transparent hover:border-blue-500`} 
+                    <Link
+                      to="/esim-shop"
+                      className={`block w-full ${i18n.language === 'ar' ? 'text-right' : 'text-left'} px-5 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all duration-300 group border-l-3 border-transparent hover:border-blue-500`}
                       onClick={handleCloseMenus}
                     >
                       <div className="font-medium flex items-center">
@@ -151,9 +154,9 @@ const Header: FC = () => {
                       </div>
                       <div className="text-sm text-gray-500 ml-5 mt-1">{t("common.global_connectivity")}</div>
                     </Link>
-                    <Link 
-                      to="/accessories" 
-                      className={`block w-full ${i18n.language === 'ar' ? 'text-right' : 'text-left'} px-5 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all duration-300 group border-l-3 border-transparent hover:border-blue-500`} 
+                    <Link
+                      to="/travel-accessories"
+                      className={`block w-full ${i18n.language === 'ar' ? 'text-right' : 'text-left'} px-5 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all duration-300 group border-l-3 border-transparent hover:border-blue-500`}
                       onClick={handleCloseMenus}
                     >
                       <div className="font-medium flex items-center">
@@ -233,14 +236,14 @@ const Header: FC = () => {
                 )}
               </div>
 
-              <Link to="/tracking" className={`${getLinkClass('/tracking')} py-2 px-3`}>
+              <Link to="/application-tracking" className={`${getLinkClass('/application-tracking')} py-2 px-3`}>
                 {t("common.track_application")}
-                <span className={getActiveLinkUnderline('/tracking')}></span>
+                <span className={getActiveLinkUnderline('/application-tracking')}></span>
               </Link>
 
               <button
                 onClick={() => scrollToSection('contact')}
-                className="text-gray-800 hover:text-blue-700 font-medium transition-all duration-300 py-2 px-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 rounded-lg relative group"
+                className="text-gray-800 hover:text-blue-700 font-medium transition-all duration-300 py-2 px-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 relative group"
               >
                 {t("common.contact")}
                 <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-blue-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-full"></span>
@@ -287,7 +290,7 @@ const Header: FC = () => {
               </button>
 
               {/* User Section */}
-              {isLoggedIn ? (
+              {user ? ( // Use the 'user' prop to check login status
                 <div className="relative">
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -314,7 +317,7 @@ const Header: FC = () => {
                       </Link>
                       <hr className="my-1 border-gray-100" />
                       <button
-                        onClick={handleLogout}
+                        onClick={onLogout} // Use the prop function
                         className="flex items-center space-x-2 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-all duration-300"
                       >
                         <LogOut className="w-4 h-4" />
@@ -325,7 +328,10 @@ const Header: FC = () => {
                 </div>
               ) : (
                 <button
-                  onClick={() => setIsAuthModalOpen(true)}
+                  onClick={() => {
+                    onAuthClick(); // Use the prop function
+                    handleCloseMenus();
+                  }}
                   className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all duration-300 text-sm font-medium shadow-sm hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2"
                 >
                   {t("common.login")}
@@ -378,7 +384,7 @@ const Header: FC = () => {
                   {isMobileShopOpen && (
                     <div className="space-y-1 pt-2 pl-8">
                       <Link
-                        to="/esim"
+                        to="/esim-shop"
                         className={`block w-full ${i18n.language === 'ar' ? 'text-right' : 'text-left'} px-5 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all duration-300`}
                         onClick={handleCloseMenus}
                       >
@@ -388,7 +394,7 @@ const Header: FC = () => {
                         </div>
                       </Link>
                       <Link
-                        to="/accessories"
+                        to="/travel-accessories"
                         className={`block w-full ${i18n.language === 'ar' ? 'text-right' : 'text-left'} px-5 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all duration-300`}
                         onClick={handleCloseMenus}
                       >
@@ -462,9 +468,9 @@ const Header: FC = () => {
                 </div>
 
                 {/* Tracking */}
-                <Link 
-                  to="/tracking" 
-                  className={`block w-full ${i18n.language === 'ar' ? 'text-right' : 'text-left'} px-5 py-3 text-gray-900 font-medium hover:bg-blue-50 rounded-lg transition-all duration-300`} 
+                <Link
+                  to="/application-tracking"
+                  className={`block w-full ${i18n.language === 'ar' ? 'text-right' : 'text-left'} px-5 py-3 text-gray-900 font-medium hover:bg-blue-50 rounded-lg transition-all duration-300`}
                   onClick={handleCloseMenus}
                 >
                   <div className="flex items-center">
@@ -511,7 +517,7 @@ const Header: FC = () => {
                 </div>
 
                 {/* User Section */}
-                {isLoggedIn ? (
+                {user ? ( // Use the 'user' prop to check login status
                   <div className="border-t border-gray-200 pt-4 mt-4">
                     <div className="flex items-center space-x-3 px-5 py-3">
                       <UserCircle className="w-10 h-10 text-blue-600" />
@@ -531,7 +537,7 @@ const Header: FC = () => {
                       </div>
                     </Link>
                     <button
-                      onClick={handleLogout}
+                      onClick={onLogout} // Use the prop function
                       className="block w-full px-5 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-300"
                     >
                       <div className="flex items-center">
@@ -544,7 +550,7 @@ const Header: FC = () => {
                   <div className="pt-4 px-2">
                     <button
                       onClick={() => {
-                        setIsAuthModalOpen(true);
+                        onAuthClick(); // Use the prop function
                         handleCloseMenus();
                       }}
                       className="w-full bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-all duration-300 text-base font-medium shadow-sm"
@@ -557,14 +563,9 @@ const Header: FC = () => {
             </div>
         </div>
       </header>
-
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
-      />
       
-      <CartSidebar 
-        isOpen={isCartOpen} 
+      <CartSidebar
+        isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         onCheckout={handleCheckout}
       />

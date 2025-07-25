@@ -151,12 +151,16 @@ const PlanSelectionModal: React.FC<PlanSelectionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+      {/* Backdrop overlay with blur */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
+      
+      {/* Modal content */}
       <div className={`
-        bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden
+        relative bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden
         transform transition-all duration-300 ease-out
         ${isAnimating ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}
-        shadow-2xl
+        shadow-2xl z-10
       `}>
         {/* Enhanced Header */}
         <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">

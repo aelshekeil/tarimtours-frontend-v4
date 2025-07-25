@@ -2,6 +2,12 @@ import { FC, Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
+// Define props for RouterComponent
+interface RouterComponentProps {
+  // Removed handleVisaServiceSelection: (service: any) => void;
+  handleDrivingLicenseServiceSelection?: (service: any) => void;
+}
+
 // Import components
 const Hero = lazy(() => import('./Hero'));
 const Services = lazy(() => import('./Services'));
@@ -16,6 +22,8 @@ const EnhancedESIMShop = lazy(() => import('./EnhancedESIMShop'));
 const TravelAccessories = lazy(() => import('./Travelaccessories'));
 const EnhancedTravelPackages = lazy(() => import('./EnhancedTravelPackages'));
 const VisaServices = lazy(() => import('./VisaServices'));
+/* Removed VisaServiceSelection and DrivingLicenseServices lazy imports */
+const DrivingLicenseServiceSelection = lazy(() => import('../components/DrivingLicenseServiceSelection').then(module => ({ default: module.DrivingLicenseServiceSelection })));
 const BusinessIncorporation = lazy(() => import('./BusinessIncorporation'));
 const Checkout = lazy(() => import('./Checkout'));
 const VisaApplicationForm = lazy(() => import('./VisaApplicationForm'));
@@ -59,28 +67,87 @@ const Home: FC = () => {
   );
 };
 
-const RouterComponent: FC = () => {
+const RouterComponent: FC<RouterComponentProps> = ({
+  // Removed handleVisaServiceSelection,
+  handleDrivingLicenseServiceSelection
+}) => {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/services" element={<Services />} />
-        <Route path="/travel-packages" element={<TravelPackages />} />
-        <Route path="/visa-application" element={<VisaApplicationForm />} />
-        <Route path="/application-tracking" element={<ApplicationTracking />} />
-        <Route path="/tracking" element={<ApplicationTracking />} />
-        <Route path="/shop" element={<Shop />} />
-        <Route path="/profile" element={<AuthGuard><Profile /></AuthGuard>} />
-        <Route path="/esim" element={<EnhancedESIMShop />} />
-        <Route path="/accessories" element={<TravelAccessories />} />
-        <Route path="/enhanced-travel-packages" element={<EnhancedTravelPackages />} />
-        <Route path="/enhanced-esim" element={<EnhancedESIMShop />} />
-        <Route path="/visa-services" element={<VisaServices />} />
-        <Route path="/international-driving-license" element={<InternationalDrivingLicense />} />
-        <Route path="/business-incorporation" element={<BusinessIncorporation />} />
-        <Route path="/checkout" element={<Checkout />} />
-      </Routes>
-    </Suspense>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/services" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <Services />
+        </Suspense>
+      } />
+      <Route path="/travel-packages" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <TravelPackages />
+        </Suspense>
+      } />
+      <Route path="/enhanced-travel-packages" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <EnhancedTravelPackages />
+        </Suspense>
+      } />
+      <Route path="/esim-shop" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <EnhancedESIMShop />
+        </Suspense>
+      } />
+      <Route path="/travel-accessories" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <TravelAccessories />
+        </Suspense>
+      } />
+      <Route path="/visa-services" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <VisaServices />
+        </Suspense>
+      } />
+     {/* Removed /driving-license-services route as component does not exist */}
+      <Route path="/driving-license-service-selection" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <DrivingLicenseServiceSelection onSelectService={handleDrivingLicenseServiceSelection || (() => {})} />
+        </Suspense>
+      } />
+      <Route path="/international-driving-license" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <InternationalDrivingLicense />
+        </Suspense>
+      } />
+      <Route path="/business-incorporation" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <BusinessIncorporation />
+        </Suspense>
+      } />
+      <Route path="/application-tracking" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <ApplicationTracking />
+        </Suspense>
+      } />
+      <Route path="/shop" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <Shop />
+        </Suspense>
+      } />
+      <Route path="/checkout" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <Checkout />
+        </Suspense>
+      } />
+      <Route path="/visa-application-form" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <VisaApplicationForm />
+        </Suspense>
+      } />
+      <Route path="/profile" element={
+        <AuthGuard>
+          <Suspense fallback={<div>Loading...</div>}>
+            <Profile />
+          </Suspense>
+        </AuthGuard>
+      } />
+    </Routes>
   );
 };
 

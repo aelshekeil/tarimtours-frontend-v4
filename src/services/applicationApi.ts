@@ -30,8 +30,11 @@ export interface VisaApplicationData {
   destinationCountry: string;
   visaType: string;
   travelDate: string;
+  dateOfBirth: string;
+  address: string;
   passportCopy: File;
   photo: File;
+  invitationLetter?: File;
   additionalDocuments?: File[];
 }
 
