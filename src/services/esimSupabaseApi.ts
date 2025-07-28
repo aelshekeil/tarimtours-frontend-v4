@@ -26,93 +26,39 @@ export interface SupabaseResponse<T> {
   error?: any;
 }
 
+import { supabase } from './supabaseClient';
+
 // Fetch all countries with their plans
 export const fetchCountriesWithPlans = async (): Promise<Country[]> => {
   try {
-    // For now, return mock data since we don't have countries table in Supabase yet
-    // In a real implementation, you would create a countries table and esim_plans table
-    const mockCountries: Country[] = [
-      {
-        id: 1,
-        name: 'Yemen',
-        isoCode: 'YE',
-        flag_icon: {
-          url: 'https://flagcdn.com/w320/ye.png'
-        },
-        plans: [
-          {
-            id: 1,
-            product_name: 'Yemen 5GB - 30 Days',
-            data_gb: '5GB',
-            net_price_usd: 25.99,
-            sms: 0,
-            voice: 0
-          },
-          {
-            id: 2,
-            product_name: 'Yemen 10GB - 30 Days',
-            data_gb: '10GB',
-            net_price_usd: 45.99,
-            sms: 0,
-            voice: 0
-          }
-        ]
-      },
-      {
-        id: 2,
-        name: 'Saudi Arabia',
-        isoCode: 'SA',
-        flag_icon: {
-          url: 'https://flagcdn.com/w320/sa.png'
-        },
-        plans: [
-          {
-            id: 3,
-            product_name: 'Saudi Arabia 3GB - 15 Days',
-            data_gb: '3GB',
-            net_price_usd: 19.99,
-            sms: 0,
-            voice: 0
-          },
-          {
-            id: 4,
-            product_name: 'Saudi Arabia 8GB - 30 Days',
-            data_gb: '8GB',
-            net_price_usd: 39.99,
-            sms: 0,
-            voice: 0
-          }
-        ]
-      },
-      {
-        id: 3,
-        name: 'United Arab Emirates',
-        isoCode: 'AE',
-        flag_icon: {
-          url: 'https://flagcdn.com/w320/ae.png'
-        },
-        plans: [
-          {
-            id: 5,
-            product_name: 'UAE 5GB - 30 Days',
-            data_gb: '5GB',
-            net_price_usd: 29.99,
-            sms: 0,
-            voice: 0
-          },
-          {
-            id: 6,
-            product_name: 'UAE 15GB - 30 Days',
-            data_gb: '15GB',
-            net_price_usd: 59.99,
-            sms: 0,
-            voice: 0
-          }
-        ]
-      }
-    ];
+    const { data, error } = await supabase.from('eSIM').select('*');
 
-    return mockCountries;
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const countries: { [key: string]: Country } = {};
+
+    data.forEach((plan: any) => {
+      const countryName = plan['Country Region'];
+      if (!countries[countryName]) {
+        countries[countryName] = {
+          id: Object.keys(countries).length + 1,
+          name: countryName,
+          plans: [],
+        };
+      }
+      countries[countryName].plans?.push({
+        id: plan.id,
+        product_name: plan['Package Id'],
+        data_gb: plan.Data,
+        net_price_usd: plan.price,
+        sms: plan.SMS,
+        voice: plan.Voice,
+      });
+    });
+
+    return Object.values(countries);
   } catch (error) {
     console.error('Error fetching countries with plans:', error);
     throw error;
@@ -143,4 +89,3 @@ export const searchCountries = async (query: string): Promise<Country[]> => {
     throw error;
   }
 };
-

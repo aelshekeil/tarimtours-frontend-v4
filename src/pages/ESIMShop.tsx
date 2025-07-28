@@ -6,7 +6,7 @@ import Globe from 'lucide-react/dist/esm/icons/globe';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Minus from 'lucide-react/dist/esm/icons/minus';
 import supabaseAPI from '../services/supabaseAPI';
-import { ESIMProduct, API_URL } from '../utils/types';
+import { ESIMProduct } from '../utils/types';
 import { useCart } from '../hooks/useCart';
 
 const ESIMShop: React.FC = () => {
@@ -50,7 +50,7 @@ const ESIMShop: React.FC = () => {
         data_amount: product.data_amount,
         validity: product.validity,
       },
-      image_url: product.image ? `${API_URL}${product.image.url}` : undefined,
+      image_url: product.image ? product.image.url : undefined,
     });
   };
 
@@ -143,7 +143,7 @@ const ESIMShop: React.FC = () => {
               {product.image ? (
                 <div className="h-48 bg-gray-100 flex items-center justify-center">
                   <img
-                    src={`${API_URL}${product.image.url}`}
+                    src={product.image.url}
                     alt={product.name}
                     className="max-h-full max-w-full object-contain"
                   />

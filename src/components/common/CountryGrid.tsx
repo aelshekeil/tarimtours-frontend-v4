@@ -52,9 +52,7 @@ const CountryGrid: React.FC<CountryGridProps> = ({ onCountrySelect }) => {
   const getFlagUrl = (country: Country): string => {
     // Prefer backend flag
     if (country.flag_icon?.url) {
-      return country.flag_icon.url.startsWith('http')
-        ? country.flag_icon.url
-        : `${import.meta.env.VITE_SUPABASE_URL}${country.flag_icon.url}`;
+      return country.flag_icon.url;
     }
     // Fallback: use isoCode from API or lookup
     const iso = country.isoCode || countriesLib.getAlpha2Code(country.name, 'en');

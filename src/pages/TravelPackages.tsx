@@ -3,8 +3,7 @@ import { MapPin, Calendar, DollarSign, Star, Clock, Heart, Eye, ArrowRight, Sear
 import { useTranslation } from 'react-i18next';
 
 // API configuration
-const API_URL = import.meta.env.VITE_SUPABASE_URL;
-const API_ENDPOINT = `${API_URL}/api/travel-packages?populate=*`;
+const API_ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL}/api/travel-packages?populate=*`;
 
 // Types based on your Strapi structure
 interface TravelPackage {
@@ -182,11 +181,11 @@ const TravelPackages: React.FC = () => {
     
     // Use medium format if available, otherwise use original
     if (coverImage.formats?.medium) {
-      return `${API_URL}${coverImage.formats.medium.url}`;
+      return coverImage.formats.medium.url;
     } else if (coverImage.formats?.small) {
-      return `${API_URL}${coverImage.formats.small.url}`;
+      return coverImage.formats.small.url;
     }
-    return `${API_URL}${coverImage.url}`;
+    return coverImage.url;
   };
 
   const formatDescription = (description: string) => {

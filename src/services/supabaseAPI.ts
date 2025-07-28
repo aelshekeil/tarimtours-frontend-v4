@@ -230,7 +230,7 @@ async uploadVisaOffer(formData: any, coverFile: File) {
       jwt: data.session?.access_token || '',
       user: {
         id: data.user?.id || '',
-        email: data.user?.email || '',
+        email: email,
         user_metadata: data.user?.user_metadata,
       },
     };
@@ -338,29 +338,26 @@ async updateTravelPackage(id: string, pkg: any) {
   }
 
   async getESIMProducts(): Promise<any[]> {
-    const { data, error } = await supabase.from('esim_products').select('*');
+    const { data, error } = await supabase.from('eSIM').select('*');
 
     if (error) {
       throw new Error(error.message);
     }
 
-    // Transform data to match Strapi structure
+    // Transform data to match the structure of the eSIM table
     return data.map((item: any) => ({
       id: item.id,
-      attributes: {
-        name: item.name,
-        description: item.description,
-        price: item.price,
-        image: {
-          data: {
-            attributes: {
-              url: item.image_url,
-            },
-          },
-        },
-        createdAt: item.created_at,
-        updatedAt: item.updated_at,
-      },
+      name: item.name,
+      country: item['Country Region'],
+      price: item.price,
+      data_amount: item.Data,
+      validity: item.validity,
+      image: item.image ? { url: item.image } : null,
+      description: item.description,
+      features: item.features,
+      category: item.Type,
+      stock_quantity: item.stock_quantity,
+      is_active: item.status === 'active',
     }));
   }
 
@@ -371,25 +368,41 @@ async updateTravelPackage(id: string, pkg: any) {
       throw new Error(error.message);
     }
 
-    // Transform data to match Strapi structure
-    return data.map((item: any) => ({
-      id: item.id,
-      attributes: {
-        name: item.name,
-        description: item.description,
-        price: item.price,
-        images: {
-          data: item.images_urls?.map((url: string, index: number) => ({
-            id: index,
-            attributes: {
-              url,
-            },
-          })) || [],
-        },
-        createdAt: item.created_at,
-        updatedAt: item.updated_at,
-      },
-    }));
+    return data;
+  }
+
+  async createTravelAccessory(accessory: any): Promise<any> {
+    const { data, error } = await supabase
+      .from('travel_accessories')
+      .insert([accessory])
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  async updateTravelAccessory(id: number, accessory: any) {
+    const { data, error } = await supabase
+      .from('travel_accessories')
+      .update(accessory)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async deleteTravelAccessory(id: number) {
+    const { error } = await supabase
+      .from('travel_accessories')
+      .delete()
+      .eq('id', id);
+    if (error) throw new Error(error.message);
+    return true;
   }
 
   async submitVisaApplication(applicationData: any, files?: FileList): Promise<ApplicationSubmission> {

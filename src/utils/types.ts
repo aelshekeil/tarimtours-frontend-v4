@@ -162,7 +162,7 @@ export interface TravelAccessory {
   createdAt: string;
   updatedAt: string;
   publishedAt: string;
-  images?: StrapiImage[];
+  images?: { url: string }[];
 }
 
 export interface InternationalDrivingLicenseApplicationAttributes {

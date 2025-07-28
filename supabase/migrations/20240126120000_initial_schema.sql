@@ -46,7 +46,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 -------------------------------------------------------------------------------
 -- Tables with explicit UUID types
 -------------------------------------------------------------------------------
-CREATE TABLE public.travel_packages (
+CREATE TABLE IF NOT EXISTS public.travel_packages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   description text NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE public.travel_packages (
   updated_at timestamptz DEFAULT NOW() NOT NULL
 );
 
-CREATE TABLE public.visa_offers (
+CREATE TABLE IF NOT EXISTS public.visa_offers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   country text NOT NULL,
   visa_type text NOT NULL,
@@ -71,7 +71,7 @@ CREATE TABLE public.visa_offers (
   created_at timestamptz DEFAULT NOW() NOT NULL
 );
 
-CREATE TABLE public.visa_applications (
+CREATE TABLE IF NOT EXISTS public.visa_applications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   full_name text,
   email text,
@@ -84,7 +84,7 @@ CREATE TABLE public.visa_applications (
   updated_at timestamptz DEFAULT NOW() NOT NULL
 );
 
-CREATE TABLE public.international_driving_license_applications (
+CREATE TABLE IF NOT EXISTS public.international_driving_license_applications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   full_name text,
   email text,
@@ -99,7 +99,7 @@ CREATE TABLE public.international_driving_license_applications (
   updated_at timestamptz DEFAULT NOW() NOT NULL
 );
 
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name text,
   avatar_url text,
@@ -111,22 +111,22 @@ CREATE TABLE public.profiles (
 -------------------------------------------------------------------------------
 -- Add update triggers
 -------------------------------------------------------------------------------
-CREATE TRIGGER update_travel_packages_updated_at
+CREATE OR REPLACE TRIGGER update_travel_packages_updated_at
     BEFORE UPDATE ON public.travel_packages
     FOR EACH ROW
     EXECUTE FUNCTION public.update_modified_column();
 
-CREATE TRIGGER update_visa_applications_updated_at
+CREATE OR REPLACE TRIGGER update_visa_applications_updated_at
     BEFORE UPDATE ON public.visa_applications
     FOR EACH ROW
     EXECUTE FUNCTION public.update_modified_column();
 
-CREATE TRIGGER update_idl_applications_updated_at
+CREATE OR REPLACE TRIGGER update_idl_applications_updated_at
     BEFORE UPDATE ON public.international_driving_license_applications
     FOR EACH ROW
     EXECUTE FUNCTION public.update_modified_column();
 
-CREATE TRIGGER update_profiles_updated_at
+CREATE OR REPLACE TRIGGER update_profiles_updated_at
     BEFORE UPDATE ON public.profiles
     FOR EACH ROW
     EXECUTE FUNCTION public.update_modified_column();

@@ -2,7 +2,12 @@
 -- This migration adds the necessary structure for admin user management
 
 -- Create enum for user roles
-CREATE TYPE public.user_role AS ENUM ('user', 'admin', 'super_admin', 'editor', 'viewer');
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+        CREATE TYPE public.user_role AS ENUM ('user', 'admin', 'super_admin', 'editor', 'viewer');
+    END IF;
+END$$;
 
 -- Add role column to profiles table if it doesn't exist
 ALTER TABLE public.profiles 

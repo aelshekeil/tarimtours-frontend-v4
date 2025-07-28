@@ -3,12 +3,14 @@ import VisaOffersManager from "../components/admin/VisaOffersManager";
 import UsersManager from "../components/admin/UsersManager.tsx";
 import SubmissionsManager from "../components/admin/SubmissionsManager.tsx";
 import TravelPackagesManager from "../components/admin/TravelPackagesManager";
+import TravelAccessoriesManager from "../components/admin/TravelAccessoriesManager";
 
 import { useState } from "react";
 
 const SECTIONS = [
   { key: "visa", label: "Visa Offers", component: <VisaOffersManager /> },
   { key: "packages", label: "Travel Packages", component: <TravelPackagesManager /> },
+  { key: "accessories", label: "Travel Accessories", component: <TravelAccessoriesManager /> },
   { key: "users", label: "Admin Users", component: <UsersManager /> },
   { key: "submissions", label: "Submissions", component: <SubmissionsManager /> },
   { key: "reports", label: "Reports (Coming Soon)", component: <div className="p-8 text-gray-400">Reports feature will be added here.</div> },

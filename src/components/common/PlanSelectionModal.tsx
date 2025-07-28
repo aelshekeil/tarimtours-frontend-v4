@@ -23,10 +23,13 @@ const PlanSelectionModal: React.FC<PlanSelectionModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setSelectedPlan(null);
+      // Reset filters and sorting as well
+      setSortBy('price');
+      setFilterData('all');
       setIsAnimating(true);
       setTimeout(() => setIsAnimating(false), 300);
     }
-  }, [isOpen]);
+  }, [isOpen, country]);
 
   if (!isOpen || !country) return null;
 
@@ -46,6 +49,7 @@ const PlanSelectionModal: React.FC<PlanSelectionModalProps> = ({
   };
 
   const getCountryCode = (countryName: string): string | null => {
+    if (!countryName) return null;
     const map: Record<string, string> = {
       'united states': 'us',
       'united kingdom': 'gb',
@@ -87,13 +91,15 @@ const PlanSelectionModal: React.FC<PlanSelectionModalProps> = ({
   const formatPrice = (price: number) => `$${price.toFixed(2)}`;
 
   const getPlanDuration = (productName: string) => {
+    if (!productName) return 'Duration varies';
     const match = productName.match(/(\d+)days?/i);
     return match ? `${match[1]} days` : 'Duration varies';
   };
 
   const getDurationInDays = (productName: string) => {
+    if (!productName) return 0;
     const match = productName.match(/(\d+)days?/i);
-    return match ? parseInt(match[1]) : 0;
+    return match ? parseInt(match[1], 10) : 0;
   };
 
   const handlePlanSelect = (plan: EsimPlan) => {
@@ -104,7 +110,7 @@ const PlanSelectionModal: React.FC<PlanSelectionModalProps> = ({
     }, 200);
   };
 
-  const plans = country.Country || [];
+  const plans = country.plans || [];
 
   // Enhanced filtering and sorting
   const filteredPlans = plans.filter(plan => {
@@ -116,8 +122,19 @@ const PlanSelectionModal: React.FC<PlanSelectionModalProps> = ({
     switch (sortBy) {
       case 'price':
         return a.net_price_usd - b.net_price_usd;
-      case 'data':
-        return parseFloat(a.data_gb.replace(/[^\d.]/g, '')) - parseFloat(b.data_gb.replace(/[^\d.]/g, ''));
+      case 'data': {
+        const getDataValue = (data_gb: string) => {
+          if (!data_gb) return -1;
+          if (data_gb.toLowerCase().includes('unlimited')) return Infinity;
+          const parsed = parseFloat(data_gb.replace(/[^\d.]/g, ''));
+          return isNaN(parsed) ? -1 : parsed;
+        };
+
+        const dataA = getDataValue(a.data_gb);
+        const dataB = getDataValue(b.data_gb);
+
+        return dataA - dataB;
+      }
       case 'duration':
         return getDurationInDays(a.product_name) - getDurationInDays(b.product_name);
       default:
@@ -126,25 +143,31 @@ const PlanSelectionModal: React.FC<PlanSelectionModalProps> = ({
   });
 
   const groupedPlans = sortedPlans.reduce((acc: Record<string, EsimPlan[]>, plan: EsimPlan) => {
-    const key = plan.data_gb;
+    const key = plan.data_gb || 'Other';
     if (!acc[key]) acc[key] = [];
     acc[key].push(plan);
     return acc;
   }, {});
 
-  const uniqueDataAmounts = [...new Set(plans.map((plan: EsimPlan) => plan.data_gb))];
+  const uniqueDataAmounts = [...new Set(plans.map((plan: EsimPlan) => plan.data_gb).filter(Boolean))];
 
   const getPopularBadge = (plan: EsimPlan) => {
     const duration = getDurationInDays(plan.product_name);
-    const dataAmount = parseFloat(plan.data_gb.replace(/[^\d.]/g, ''));
+    if (!plan.data_gb) return null;
+    const isUnlimited = plan.data_gb.toLowerCase().includes('unlimited');
+    const dataAmount = isUnlimited ? Infinity : parseFloat(plan.data_gb.replace(/[^\d.]/g, ''));
+
+    if (isNaN(dataAmount)) {
+      return null; // Don't show a badge if data amount is not a number and not unlimited
+    }
     
-    if (duration >= 7 && duration <= 30 && dataAmount >= 1 && dataAmount <= 10) {
+    if (!isUnlimited && duration >= 7 && duration <= 30 && dataAmount >= 1 && dataAmount <= 10) {
       return 'Most Popular';
     }
     if (plan.net_price_usd < 10) {
       return 'Best Value';
     }
-    if (dataAmount >= 20) {
+    if (isUnlimited || dataAmount >= 20) {
       return 'High Data';
     }
     return null;

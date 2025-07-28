@@ -15,7 +15,7 @@ import Search from 'lucide-react/dist/esm/icons/search';
 import Grid from 'lucide-react/dist/esm/icons/grid';
 import List from 'lucide-react/dist/esm/icons/list';
 import supabaseAPI from '../services/supabaseAPI';
-import { TravelAccessory, API_URL } from '../utils/types';
+import { TravelAccessory } from '../utils/types';
 import { useCart } from '../hooks/useCart';
 
 const TravelAccessories: React.FC = () => {
@@ -31,6 +31,7 @@ const TravelAccessories: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const { addToCart, getItemQuantity, updateQuantity } = useCart();
+  
 
   useEffect(() => {
     const fetchAccessories = async () => {
@@ -94,7 +95,7 @@ const TravelAccessories: React.FC = () => {
         dimensions: accessory.dimensions,
         requires_shipping: accessory.requires_shipping
       },
-      image_url: accessory.images?.[0]?.url ? `${API_URL}${accessory.images[0].url}` : undefined
+      image_url: accessory.images?.[0]?.url ? accessory.images[0].url : undefined
     });
   };
 
@@ -381,7 +382,7 @@ const TravelAccessories: React.FC = () => {
         {filteredAccessories.map((accessory) => {
           const quantity = getItemQuantity(`accessory-${accessory.id}`);
           const mainImage = accessory.images?.[0];
-          const imageUrl = mainImage?.url ? `${API_URL}${mainImage.url}` : '';
+          const imageUrl = mainImage?.url ? mainImage.url : '';
           const stockStatus = getStockStatus(accessory.stock_quantity);
           const isFavorite = favorites.has(accessory.id);
           
@@ -397,19 +398,26 @@ const TravelAccessories: React.FC = () => {
                 viewMode === 'list' ? 'w-48 h-48' : 'h-64'
               }`}>
                 {mainImage ? (
-                  <img
-                    src={imageUrl}
-                    alt={accessory.name}
-                    className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                  />
+                <img
+                  src={imageUrl}
+                  alt={accessory.name}
+                  className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                  onLoad={() => console.log('Image loaded:', mainImage.url)}
+                  onError={(e) => {
+                    // Fallback to category icon if image fails
+                    e.currentTarget.style.display = 'none';
+                    const parent = e.currentTarget.parentElement as HTMLElement | null;
+                    if (parent) {
+                      const icon = parent.querySelector('.category-icon') as HTMLElement | null;
+                      if (icon) icon.style.display = 'block';
+                    }
+                  }}
+                />
                 ) : (
-                  <div className="text-6xl transition-transform duration-300 group-hover:scale-110">
+                  <div className="text-6xl transition-transform duration-300 group-hover:scale-110 category-icon hidden">
                     {getCategoryIcon(accessory.category)}
                   </div>
                 )}
-                
-                {/* Overlay Elements */}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300"></div>
                 
                 {/* Category Badge */}
                 <div className="absolute top-3 left-3">
