@@ -16,14 +16,16 @@ class AuthService {
             localStorage.setItem('access_token', data.session.access_token);
         }
 
-        return {
-            jwt: data.session?.access_token || '',
-            user: {
-                id: data.user?.id || '',
-                username: data.user?.user_metadata?.username || '',
-                email: data.user?.email || '',
-            },
-        };
+                return {
+                    jwt: data.session?.access_token || '',
+                    user: {
+                        id: data.user?.id || '',
+                        email: data.user?.email || '',
+                        user_metadata: {
+                            username: data.user?.user_metadata?.username || '',
+                        },
+                    },
+                };
     }
 
     async logout(): Promise<void> {
@@ -37,7 +39,7 @@ class AuthService {
             password: userInfo.password,
             options: {
                 data: {
-                    username: userInfo.username,
+                    username: userInfo.username ?? '',
                 },
             },
         });
@@ -46,14 +48,16 @@ class AuthService {
             throw new Error(error.message);
         }
 
-        return {
-            jwt: data.session?.access_token || '',
-            user: {
-                id: data.user?.id || '',
-                username: userInfo.username,
-                email: userInfo.email,
-            },
-        };
+                return {
+                    jwt: data.session?.access_token || '',
+                    user: {
+                        id: data.user?.id || '',
+                        email: userInfo.email,
+                        user_metadata: {
+                            username: userInfo.username,
+                        },
+                    },
+                };
     }
 
     isAuthenticated(): boolean {
@@ -71,4 +75,3 @@ class AuthService {
 }
 
 export default new AuthService();
-

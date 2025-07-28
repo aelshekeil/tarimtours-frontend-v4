@@ -5,6 +5,167 @@ import {
 } from '../utils/types';
 
 class SupabaseAPI {
+  // VISA OFFERS CRUD
+  async getVisaOffers() {
+    const { data, error } = await supabase
+      .from('visa_offers')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+
+async uploadVisaOffer(formData: any, coverFile: File) {
+  // Ensure user is authenticated
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("User not authenticated");
+
+  // 1. Sanitize filename
+  const sanitizeFilename = (name: string) => {
+    return name
+      .replace(/\s+/g, '_')
+      .replace(/[^\w.\-]/g, '')
+      .toLowerCase()
+      .substring(0, 100);
+  };
+  
+  const cleanFilename = `${Date.now()}_${sanitizeFilename(coverFile.name)}`;
+  const storagePath = `visa-covers/${cleanFilename}`;
+  
+  // 2. Upload image to storage
+  const { error: uploadError } = await supabase.storage
+    .from('visa-covers')
+    .upload(storagePath, coverFile, {
+      cacheControl: '3600',
+      upsert: false
+    });
+  
+  if (uploadError) {
+    console.error("Storage upload error:", uploadError);
+    throw new Error(`File upload failed: ${uploadError.message}`);
+  }
+  
+  // 3. Get public URL
+  const { data: urlData } = supabase.storage
+    .from('visa-covers')
+    .getPublicUrl(storagePath);
+  
+  // 4. Create database record
+  const { error: dbError } = await supabase
+    .from('visa_offers')
+    .insert({
+      ...formData,
+      cover_photo_url: urlData.publicUrl,
+      created_by: user.id  // Add created_by column
+    });
+  
+  if (dbError) {
+    console.error("DB insert error:", dbError);
+    throw new Error(`Database insert failed: ${dbError.message}`);
+  }
+  
+  return true;
+}
+  async updateVisaOffer(id: string, offer: any) {
+    const { data, error } = await supabase
+      .from('visa_offers')
+      .update(offer)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async deleteVisaOffer(id: string) {
+    console.log(`Attempting to delete visa offer with ID: ${id}`);
+    
+    // Get current user to verify authentication
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('User not authenticated');
+    }
+    console.log(`Authenticated user: ${user.id}`);
+    
+    // First, let's check if the record exists and who created it
+    const { data: existingRecord, error: fetchError } = await supabase
+      .from('visa_offers')
+      .select('id, created_by, country')
+      .eq('id', id)
+      .single();
+      
+    if (fetchError) {
+      console.error('Error fetching record:', fetchError);
+      throw new Error(`Record not found: ${fetchError.message}`);
+    }
+    
+    console.log(`Found record:`, existingRecord);
+    console.log(`Record created by: ${existingRecord.created_by}, Current user: ${user.id}`);
+    
+    // Try to create the missing DELETE policy first
+    try {
+      console.log('Attempting to create DELETE policy...');
+      const { error: policyError } = await supabase.rpc('exec_sql', {
+        query: `
+          DO $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_policies
+              WHERE schemaname = 'public'
+              AND tablename = 'visa_offers'
+              AND policyname = 'visa_offers_creator_delete'
+            ) THEN
+              EXECUTE 'CREATE POLICY "visa_offers_creator_delete" ON public.visa_offers FOR DELETE TO authenticated USING (auth.uid() = created_by)';
+              RAISE NOTICE 'DELETE policy created successfully';
+            ELSE
+              RAISE NOTICE 'DELETE policy already exists';
+            END IF;
+          END $$;
+        `
+      });
+      
+      if (policyError) {
+        console.warn('Could not create DELETE policy via RPC:', policyError.message);
+        
+        // Try alternative approach using direct SQL execution
+        const { error: sqlError } = await supabase
+          .from('pg_policies')
+          .select('*')
+          .eq('schemaname', 'public')
+          .eq('tablename', 'visa_offers')
+          .eq('policyname', 'visa_offers_creator_delete')
+          .single();
+          
+        if (sqlError && sqlError.code === 'PGRST116') {
+          console.log('DELETE policy does not exist, this explains the issue');
+        }
+      } else {
+        console.log('DELETE policy creation attempted successfully');
+      }
+    } catch (err) {
+      console.warn('Policy creation failed:', err);
+    }
+    
+    // Now attempt the delete
+    const { error, count } = await supabase
+      .from('visa_offers')
+      .delete({ count: 'exact' })
+      .eq('id', id);
+      
+    if (error) {
+      console.error('Delete error details:', error);
+      throw new Error(`Failed to delete visa offer: ${error.message} (Code: ${error.code})`);
+    }
+    
+    console.log(`Delete operation completed. Rows affected: ${count}`);
+    
+    if (count === 0) {
+      throw new Error('No rows were deleted. The DELETE policy for visa_offers table is missing. Please contact your database administrator to add: CREATE POLICY "visa_offers_creator_delete" ON public.visa_offers FOR DELETE TO authenticated USING (auth.uid() = created_by);');
+    }
+    
+    return true;
+  }
+
   async setToken(token: string) {
     // Supabase handles tokens automatically, but we can store for compatibility
     localStorage.setItem('jwt', token);
@@ -16,26 +177,25 @@ class SupabaseAPI {
   }
 
   // Add generic get method for compatibility
-  async get<T>(endpoint: string): Promise<T> {
-    // This is a simplified implementation for compatibility
-    // In a real scenario, you'd map endpoints to appropriate Supabase calls
-    throw new Error(`Generic get method not implemented for endpoint: ${endpoint}`);
-  }
+  // Remove generic methods since we have specific implementations
+  // All API calls should use the specific methods below
+  // Generic methods were causing confusion and errors
+  // async get<T>(endpoint: string): Promise<T> {
+  //   throw new Error(`Generic get method not implemented for endpoint: ${endpoint}`);
+  // }
 
-  // Add generic post method for compatibility
-  async post<T>(endpoint: string, _data: any): Promise<T> {
-    // This is a simplified implementation for compatibility
-    // In a real scenario, you'd map endpoints to appropriate Supabase calls
-    throw new Error(`Generic post method not implemented for endpoint: ${endpoint}`);
-  }
+  // async post<T>(endpoint: string, _data: any): Promise<T> {
+  //   throw new Error(`Generic post method not implemented for endpoint: ${endpoint}`);
+  // }
 
-  async register(username: string, email: string, password: string): Promise<AuthResponse> {
+  async register(firstName: string, lastName: string, email: string, password: string): Promise<AuthResponse> {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          username,
+          first_name: firstName,
+          last_name: lastName,
         },
       },
     });
@@ -49,8 +209,8 @@ class SupabaseAPI {
       jwt: data.session?.access_token || '',
       user: {
         id: data.user?.id || '',
-        username: username,
         email: email,
+        user_metadata: data.user?.user_metadata || { first_name: firstName, last_name: lastName },
       },
     };
   }
@@ -70,17 +230,17 @@ class SupabaseAPI {
       jwt: data.session?.access_token || '',
       user: {
         id: data.user?.id || '',
-        username: data.user?.user_metadata?.username || '',
         email: data.user?.email || '',
+        user_metadata: data.user?.user_metadata,
       },
     };
   }
 
-  async updateProfile(_userId: string, data: { username?: string; email?: string }): Promise<any> {
+  async updateProfile(_userId: string, data: { first_name?: string; last_name?: string; email?: string }): Promise<any> {
     const { error } = await supabase.auth.updateUser({
-      email: data.email,
       data: {
-        username: data.username,
+        first_name: data.first_name,
+        last_name: data.last_name,
       },
     });
 
@@ -107,8 +267,8 @@ class SupabaseAPI {
     return { success: true };
   }
 
-  async getTravelPackages(featuredOnly?: boolean): Promise<any[]> {
-    let query = supabase.from('travel_packages').select('*');
+  async getTravelPackages(featuredOnly?: boolean, populate?: boolean): Promise<any[]> {
+    let query = supabase.from('travel_packages').select(populate ? '*' : '*');
     
     if (featuredOnly) {
       query = query.eq('featured', true);
@@ -124,21 +284,57 @@ class SupabaseAPI {
     return data.map((item: any) => ({
       id: item.id,
       attributes: {
-        title: item.title,
+        title: item.name,
         description: item.description,
         price: item.price,
         featured: item.featured,
         cover_image: {
           data: {
             attributes: {
-              url: item.cover_image_url,
+              url: item.cover_photo_url,
             },
           },
         },
         createdAt: item.created_at,
         updatedAt: item.updated_at,
+        duration: item.duration,
+        destination: item.destination,
+        rating: item.rating,
       },
     }));
+  }
+
+  async createTravelPackage(pkg: any): Promise<any> {
+    const { data, error } = await supabase
+      .from('travel_packages')
+      .insert([pkg])
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+async updateTravelPackage(id: string, pkg: any) {
+    const { data, error } = await supabase
+      .from('travel_packages')
+      .update(pkg)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async deleteTravelPackage(id: string) {
+    const { error } = await supabase
+      .from('travel_packages')
+      .delete()
+      .eq('id', id);
+    if (error) throw new Error(error.message);
+    return true;
   }
 
   async getESIMProducts(): Promise<any[]> {

@@ -227,12 +227,13 @@ const VisaApplicationForm: FC = () => {
                   <div className="flex items-center">
                     <div className="text-blue-600 mr-4">{selectedService.icon}</div>
                     <div>
-                      <h3 className="text-xl font-bold text-gray-800">{selectedService.name}</h3>
-                      <p className="text-gray-600">{selectedService.description}</p>
+                      <h3 className="text-xl font-bold text-gray-800">{selectedService.country}</h3>
+                      <p className="text-gray-600">{selectedService.visa_type}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-3xl font-bold text-blue-600">${selectedService.price}</div>
+                    <p className="text-gray-600">{selectedService.duration}</p>
                   </div>
                 </div>
               </div>

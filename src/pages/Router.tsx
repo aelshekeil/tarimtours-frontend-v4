@@ -22,12 +22,14 @@ const EnhancedESIMShop = lazy(() => import('./EnhancedESIMShop'));
 const TravelAccessories = lazy(() => import('./Travelaccessories'));
 const EnhancedTravelPackages = lazy(() => import('./EnhancedTravelPackages'));
 const VisaServices = lazy(() => import('./VisaServices'));
+import ErrorBoundary from '../components/common/ErrorBoundary';
 /* Removed VisaServiceSelection and DrivingLicenseServices lazy imports */
 const DrivingLicenseServiceSelection = lazy(() => import('../components/DrivingLicenseServiceSelection').then(module => ({ default: module.DrivingLicenseServiceSelection })));
 const BusinessIncorporation = lazy(() => import('./BusinessIncorporation'));
 const Checkout = lazy(() => import('./Checkout'));
 const VisaApplicationForm = lazy(() => import('./VisaApplicationForm'));
 const InternationalDrivingLicense = lazy(() => import('./InternationalDrivingLicense'));
+const AdminDashboard = lazy(() => import('./AdminDashboard'));
 
 const Home: FC = () => {
   const { t } = useTranslation();
@@ -85,9 +87,11 @@ const RouterComponent: FC<RouterComponentProps> = ({
         </Suspense>
       } />
       <Route path="/enhanced-travel-packages" element={
-        <Suspense fallback={<div>Loading...</div>}>
-          <EnhancedTravelPackages />
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <EnhancedTravelPackages />
+          </Suspense>
+        </ErrorBoundary>
       } />
       <Route path="/esim-shop" element={
         <Suspense fallback={<div>Loading...</div>}>
@@ -146,6 +150,11 @@ const RouterComponent: FC<RouterComponentProps> = ({
             <Profile />
           </Suspense>
         </AuthGuard>
+      } />
+      <Route path="/admin" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <AdminDashboard />
+        </Suspense>
       } />
     </Routes>
   );

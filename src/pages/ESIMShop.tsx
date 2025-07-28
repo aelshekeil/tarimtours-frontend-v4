@@ -5,8 +5,8 @@ import Wifi from 'lucide-react/dist/esm/icons/wifi';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Minus from 'lucide-react/dist/esm/icons/minus';
-import strapiAPI from '../lib/api';
-import { ESIMProduct, API_URL } from '../lib/types';
+import supabaseAPI from '../services/supabaseAPI';
+import { ESIMProduct, API_URL } from '../utils/types';
 import { useCart } from '../hooks/useCart';
 
 const ESIMShop: React.FC = () => {
@@ -21,9 +21,9 @@ const ESIMShop: React.FC = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const products = await strapiAPI.getESIMProducts();
+        const products = await supabaseAPI.getESIMProducts();
         console.log('eSIM products:', products);
-        setEsimProducts(products.filter(p => p.is_active));
+        setEsimProducts(products.filter((p: ESIMProduct) => p.is_active));
       } catch (err) {
         setError(err as Error);
       } finally {

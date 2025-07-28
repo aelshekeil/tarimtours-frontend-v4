@@ -332,16 +332,16 @@ const ApplicationTracking: FC = () => {
           <div className="space-y-6">
             {/* Status Overview Card */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-              <div className={`px-6 py-4 border-b border-gray-200 ${getStatusColor(applicationStatus.application_status)}`}>
+              <div className={`px-6 py-4 border-b border-gray-200 ${getStatusColor(applicationStatus.status)}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    {getStatusIcon(applicationStatus.application_status)}
+                    {getStatusIcon(applicationStatus.status)}
                     <div>
                       <h3 className="text-lg font-semibold">
                         {t('tracking.status_title') || 'Application Status'}
                       </h3>
                       <p className="text-sm opacity-80">
-                        Your {selectedApplicationType.name.toLowerCase()} application is currently {applicationStatus.application_status?.toLowerCase() || 'under review'}
+                        Your {selectedApplicationType.name.toLowerCase()} application is currently {applicationStatus.status?.toLowerCase() || 'under review'}
                       </p>
                     </div>
                   </div>
@@ -556,10 +556,10 @@ const ApplicationTracking: FC = () => {
                     </h4>
                     <div className="text-center py-8">
                       <div className="bg-gray-100 rounded-full p-4 w-16 h-16 mx-auto mb-4">
-                        <FileText className="w-8 h-8 text-gray-400" />
+                        <FileCheck className="w-8 h-8 text-gray-400" />
                       </div>
-                      <p className="text-gray-600 mb-2">Documents are being processed</p>
-                      <p className="text-sm text-gray-500">Your submitted documents will appear here once they are uploaded to our system.</p>
+                      <p className="text-gray-600 mb-2">We have received your documents.</p>
+                      <p className="text-sm text-gray-500">For your security, we do not display the documents here, but rest assured they are being securely processed by our team.</p>
                     </div>
                   </div>
                 );
@@ -583,9 +583,8 @@ const ApplicationTracking: FC = () => {
                     </div>
                     <div className="flex items-center gap-2 text-green-600 text-sm">
                       <CheckCircle className="w-4 h-4" />
-                      <span>Document submitted</span>
+                      <span>Document has been submitted and is being reviewed by our team.</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Available for review by our team</p>
                   </div>
                 )}
 
@@ -600,9 +599,8 @@ const ApplicationTracking: FC = () => {
                     </div>
                     <div className="flex items-center gap-2 text-green-600 text-sm">
                       <CheckCircle className="w-4 h-4" />
-                      <span>Document submitted</span>
+                      <span>Document has been submitted and is being reviewed by our team.</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Available for review by our team</p>
                   </div>
                 )}
 
@@ -617,9 +615,8 @@ const ApplicationTracking: FC = () => {
                     </div>
                     <div className="flex items-center gap-2 text-green-600 text-sm">
                       <CheckCircle className="w-4 h-4" />
-                      <span>Document submitted</span>
+                      <span>Document has been submitted and is being reviewed by our team.</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Available for review by our team</p>
                   </div>
                 )}
 
@@ -634,9 +631,8 @@ const ApplicationTracking: FC = () => {
                     </div>
                     <div className="flex items-center gap-2 text-green-600 text-sm">
                       <CheckCircle className="w-4 h-4" />
-                      <span>Document submitted</span>
+                      <span>Document has been submitted and is being reviewed by our team.</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Available for review by our team</p>
                   </div>
                 )}
 
@@ -651,18 +647,8 @@ const ApplicationTracking: FC = () => {
                     </div>
                     <div className="flex items-center gap-2 text-green-600 text-sm">
                       <CheckCircle className="w-4 h-4" />
-                      <span>
-                        {(() => {
-                          try {
-                            const docs = JSON.parse(applicationStatus.additional_documents_urls);
-                            return `${docs.length} document${docs.length > 1 ? 's' : ''} submitted`;
-                          } catch {
-                            return 'Document submitted';
-                          }
-                        })()}
-                      </span>
+                      <span>Document has been submitted and is being reviewed by our team.</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Available for review by our team</p>
                   </div>
                 )}
               </div>
@@ -713,7 +699,7 @@ const ApplicationTracking: FC = () => {
                 
                 <div className="flex items-center gap-4">
                   <div className={`rounded-full p-2 ${
-                    applicationStatus.application_status === 'processing' || applicationStatus.application_status === 'approved' 
+                    applicationStatus.status === 'Under Review' || applicationStatus.status === 'Completed' 
                       ? 'bg-blue-500' : 'bg-gray-300'
                   }`}>
                     <Clock className="w-4 h-4 text-white" />
@@ -721,15 +707,15 @@ const ApplicationTracking: FC = () => {
                   <div>
                     <p className="font-medium text-gray-800">Under Review</p>
                     <p className="text-sm text-gray-600">
-                      {applicationStatus.application_status === 'processing' || applicationStatus.application_status === 'approved' 
-                        ? 'Currently being processed' : 'Pending review'}
+                      {applicationStatus.status === 'Under Review' ? 'Currently being processed' :
+                       applicationStatus.status === 'Completed' ? 'Review complete' : 'Pending review'}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
                   <div className={`rounded-full p-2 ${
-                    applicationStatus.application_status === 'approved' 
+                    applicationStatus.status === 'Completed' 
                       ? 'bg-green-500' : 'bg-gray-300'
                   }`}>
                     <CheckCircle className="w-4 h-4 text-white" />
@@ -737,7 +723,7 @@ const ApplicationTracking: FC = () => {
                   <div>
                     <p className="font-medium text-gray-800">Completed</p>
                     <p className="text-sm text-gray-600">
-                      {applicationStatus.application_status === 'approved' 
+                      {applicationStatus.status === 'Completed' 
                         ? 'Application approved' : 'Awaiting completion'}
                     </p>
                   </div>

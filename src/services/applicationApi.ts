@@ -4,7 +4,14 @@ import { createClient } from '@supabase/supabase-js';
 const API_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const supabase = createClient(API_URL, SUPABASE_ANON_KEY);
+// Create Supabase client with dynamic auth token
+const supabase = createClient(API_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});
 
 export interface DrivingLicenseApplicationData {
   fullName: string;
@@ -95,7 +102,7 @@ export const submitDrivingLicenseApplication = async (
       }
       // Construct the public URL for the uploaded file
       // Example: "https://your-project-ref.supabase.co/storage/v1/object/public/applications/trackingId/idCopy"
-      return `${API_URL}/storage/v1/object/public/${uploadData.path}`;
+      return `${API_URL}/storage/v1/object/public/applications/${uploadData.path}`;
     };
 
     // Upload files concurrently
@@ -105,18 +112,22 @@ export const submitDrivingLicenseApplication = async (
       uploadFile(oldLicenseCopy, 'oldLicenseCopy'),
     ]);
 
+    // Get current user ID from Supabase auth
+    const { data: { user } } = await supabase.auth.getUser();
+    
     // Send the form data, including the file URLs and tracking_id, to the Supabase database
     const response = await api.post('/international_driving_license_applications', {
-      fullName,
+      full_name: fullName,
       email,
       phone,
       dateOfBirth,
       nationality,
       address,
-      tracking_id: trackingId, // Ensure tracking_id is sent in the POST request
-      idCopyUrl: idCopyUrl,
-      photoUrl: photoUrl,
-      oldLicenseCopyUrl: oldLicenseCopyUrl,
+      tracking_id: trackingId,
+      license_front_url: idCopyUrl,
+      personal_photo_url: photoUrl,
+      passport_page_url: oldLicenseCopyUrl,
+      user_id: user?.id
     });
 
     // Log the backend response for debugging
@@ -150,7 +161,7 @@ export const submitVisaApplication = async (data: VisaApplicationData, trackingI
       console.error('Error uploading file:', uploadError);
       throw uploadError;
     }
-    return `${API_URL}/storage/v1/object/public/${uploadData.path}`;
+    return `${API_URL}/storage/v1/object/public/applications/${uploadData.path}`;
   };
 
   const [passportCopyUrl, photoUrl] = await Promise.all([
@@ -167,12 +178,28 @@ export const submitVisaApplication = async (data: VisaApplicationData, trackingI
     );
   }
 
+  const { fullName, email, phone, passportNumber, nationality, destinationCountry, visaType, travelDate, dateOfBirth, address } = otherData;
+
+  const applicationData = {
+    phone,
+    passportNumber,
+    nationality,
+    destinationCountry,
+    visaType,
+    travelDate,
+    dateOfBirth,
+    address,
+  };
+
+  const { data: { user } } = await supabase.auth.getUser();
+
   const response = await api.post('/visa_applications', {
-    ...otherData,
+    full_name: fullName,
+    email: email,
     tracking_id: trackingId,
-    passport_copy_url: [passportCopyUrl],
-    photo_url: [photoUrl],
-    additional_documents_urls: additionalDocumentsUrls || [],
+    application_data: applicationData,
+    files_urls: [passportCopyUrl, photoUrl, ...additionalDocumentsUrls].filter(Boolean),
+    user_id: user?.id,
   });
 
   return response.data;

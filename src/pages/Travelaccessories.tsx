@@ -14,7 +14,7 @@ import Filter from 'lucide-react/dist/esm/icons/filter';
 import Search from 'lucide-react/dist/esm/icons/search';
 import Grid from 'lucide-react/dist/esm/icons/grid';
 import List from 'lucide-react/dist/esm/icons/list';
-import strapiAPI from '../services/api';
+import supabaseAPI from '../services/supabaseAPI';
 import { TravelAccessory, API_URL } from '../utils/types';
 import { useCart } from '../hooks/useCart';
 
@@ -36,13 +36,13 @@ const TravelAccessories: React.FC = () => {
     const fetchAccessories = async () => {
       try {
         setLoading(true);
-        const products = await strapiAPI.getTravelAccessories();
-        const activeProducts = products.filter(p => p.is_active);
+        const products = await supabaseAPI.getTravelAccessories();
+        const activeProducts = products.filter((p: any) => p.is_active);
         setAccessories(activeProducts);
         
         // Set initial price range based on actual products
         if (activeProducts.length > 0) {
-          const prices = activeProducts.map(p => p.price);
+          const prices = activeProducts.map((p: any) => p.price);
           setPriceRange([Math.min(...prices), Math.max(...prices)]);
         }
       } catch (err) {

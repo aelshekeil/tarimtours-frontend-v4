@@ -1,66 +1,8 @@
 import { useState, useEffect } from 'react';
-import strapiAPI from '../services/api';
-
-// Authentication Hook
-export const useAuth = () => {
-  const [user, setUser] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('jwt');
-
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
-      strapiAPI.setToken(storedToken);
-    }
-
-    setLoading(false);
-  }, []);
-
-  const login = async (identifier: string, password: string) => {
-    try {
-      const response = await strapiAPI.login(identifier, password);
-      setUser(response.user);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      localStorage.setItem('jwt', response.jwt);
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const register = async (username: string, email: string, password: string) => {
-    try {
-      const response = await strapiAPI.register(username, email, password);
-      setUser(response.user);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      localStorage.setItem('jwt', response.jwt);
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const logout = () => {
-    strapiAPI.removeToken();
-    setUser(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('jwt');
-  };
-
-  return {
-    user,
-    loading,
-    login,
-    register,
-    logout,
-    isAuthenticated: !!user,
-  };
-};
+import supabaseAPI from '../services/supabaseAPI';
 
 // Generic API Data Fetching Hook
-export const useAPI = <T>(endpoint: string) => {
+export const useAPI = (endpoint: string) => {
   const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -69,7 +11,8 @@ export const useAPI = <T>(endpoint: string) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await strapiAPI.get<T>(endpoint);
+        // @ts-ignore
+        const response = await supabaseAPI.get(endpoint);
         setData(response);
       } catch (err) {
         setError(err as Error);
@@ -85,16 +28,16 @@ export const useAPI = <T>(endpoint: string) => {
 };
 
 // Form Submission Hook
-export const useFormSubmission = <T>(endpoint: string) => {
+export const useFormSubmission = (endpoint: string) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [response, setResponse] = useState<T | null>(null);
+  const [response, setResponse] = useState<any | null>(null);
 
   const submit = async (formData: any) => {
     setSubmitting(true);
     try {
-      // strapiAPI.post() returns data directly, not wrapped in .data
-      const result = await strapiAPI.post<T>(endpoint, formData);
+      // @ts-ignore
+      const result = await supabaseAPI.post(endpoint, formData);
       setResponse(result);
       return result;
     } catch (err) {

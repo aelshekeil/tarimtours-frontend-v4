@@ -63,6 +63,14 @@ export const formatFileSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
+export const sanitizeFilename = (name: string): string => {
+  return name
+    .replace(/\s+/g, '_')         // Replace spaces with underscores
+    .replace(/[^\w.\-]/g, '')     // Remove special characters
+    .toLowerCase()               // Convert to lowercase
+    .substring(0, 100);           // Limit filename length
+};
+
 // Constants
 export const FILE_UPLOAD_LIMITS = {
   maxSize: 10 * 1024 * 1024, // 10MB

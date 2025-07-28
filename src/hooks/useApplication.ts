@@ -3,7 +3,7 @@ import { supabase } from '../services/supabaseClient'; // Adjust import path as 
 
 interface ApplicationStatus {
   tracking_id: string;
-  application_status: string;
+  status: string;
   created_at: string;
   // Add other fields as needed based on your database schema
   [key: string]: any;

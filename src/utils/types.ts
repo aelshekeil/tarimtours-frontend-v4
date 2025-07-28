@@ -21,7 +21,6 @@ export interface StrapiEntity<T> {
 
 export interface StrapiUserAttributes {
   id: string | number; // Support both string (Supabase) and number (Strapi) IDs
-  username: string;
   email: string;
   confirmed?: boolean;
   blocked?: boolean;
@@ -29,6 +28,12 @@ export interface StrapiUserAttributes {
   updatedAt?: string;
   created_at?: string; // Supabase format
   updated_at?: string; // Supabase format
+  user_metadata?: {
+    first_name?: string;
+    last_name?: string;
+    username?: string; // Added to resolve authService type errors
+    [key: string]: any; // Allow other metadata fields
+  };
 }
 
 export type StrapiUser = StrapiEntity<StrapiUserAttributes>;
@@ -232,4 +237,14 @@ export interface CartItem {
   price: number;
   product_details?: ProductDetails;
   image_url?: string;
+}
+
+export interface VisaOffer {
+  id: string;
+  country: string;
+  visa_type: string;
+  duration: string;
+  price: number;
+  requirements: string;
+  cover_photo_url?: string;
 }

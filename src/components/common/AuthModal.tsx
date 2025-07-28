@@ -5,17 +5,20 @@ import Lock from 'lucide-react/dist/esm/icons/lock';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
 import X from 'lucide-react/dist/esm/icons/x';
-import strapiAPI from '../../services/api'; // Import the default export
+import supabaseAPI from '../../services/supabaseAPI';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onLoginSuccess?: (user: any) => void;
 }
 
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
   });
@@ -39,9 +42,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       let userResponse;
       if (isLogin) {
-        userResponse = await strapiAPI.login(formData.email, formData.password);
+        userResponse = await supabaseAPI.login(formData.email, formData.password);
       } else {
-        userResponse = await strapiAPI.register(formData.email, formData.email, formData.password);
+        userResponse = await supabaseAPI.register(formData.firstName, formData.lastName, formData.email, formData.password);
       }
       
       if (!userResponse.jwt) {
@@ -50,15 +53,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
       // Store user data in localStorage and dispatch authChange event
       localStorage.setItem('user', JSON.stringify(userResponse));
+      supabaseAPI.setToken(userResponse.jwt); // Set the token in the API service
 
-      // Refresh the page after successful login
-      if (isLogin) {
-        window.location.reload();
+      if (onLoginSuccess) {
+        onLoginSuccess(userResponse);
       }
-      strapiAPI.setToken(userResponse.jwt); // Set the token in the API service
-
-      onClose();
-      setFormData({ email: '', password: '' });
+      setFormData({ firstName: '', lastName: '', email: '', password: '' });
       window.dispatchEvent(new CustomEvent('authChange')); // Dispatch event for useAuth to pick up
     } catch (err: any) {
       setError(err.message);
@@ -70,7 +70,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setError(null);
-    setFormData({ email: '', password: ''});
+    setFormData({ firstName: '', lastName: '', email: '', password: '' });
   };
 
   if (!isOpen) return null;
@@ -108,6 +108,52 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         {/* Form */}
         <div className="px-8 pb-8">
           <div className="space-y-6">
+            {/* First Name Field (Registration only) */}
+            {!isLogin && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  First Name
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="text-gray-400" size={18} />
+                  </div>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    placeholder="Enter your first name"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Last Name Field (Registration only) */}
+            {!isLogin && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Last Name
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="text-gray-400" size={18} />
+                  </div>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    placeholder="Enter your last name"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Email Field */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -128,29 +174,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 />
               </div>
             </div>
-
-            {/* Email Field (Registration only) */}
-            {!isLogin && (
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="text-gray-400" size={18} />
-                  </div>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="Enter your email address"
-                    required
-                  />
-                </div>
-              </div>
-            )}
 
             {/* Password Field */}
             <div className="space-y-2">

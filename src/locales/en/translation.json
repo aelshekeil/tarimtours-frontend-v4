@@ -429,7 +429,8 @@
     "email_updates_info": "You'll receive email updates for status changes",
     "keep_tracking_number_safe": "Keep your tracking number safe for future reference",
     "contact_support": "Contact Support",
-    "questions_about_application": "If you have questions about your application:"
+    "questions_about_application": "If you have questions about your application:",
+    "select_service_type": "Select Service Type"
   },
   "profile": {
     "update_profile": "Update Profile",

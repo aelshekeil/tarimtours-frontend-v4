@@ -52,6 +52,10 @@ function App() {
           <AuthModal
             isOpen={showAuthModal}
             onClose={() => setShowAuthModal(false)}
+            onLoginSuccess={(user) => {
+              setUser(user);
+              setShowAuthModal(false);
+            }}
           />
         )}
       </div>

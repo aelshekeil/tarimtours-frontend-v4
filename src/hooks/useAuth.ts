@@ -9,7 +9,7 @@ export const useAuth = () => {
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser.user); // Assuming the user object is nested under 'user'
+        setUser(parsedUser.user); // The user object from Supabase already contains user_metadata
         setIsLoggedIn(true);
       } catch (e) {
         // console.error("Failed to parse user from localStorage", e);
@@ -26,8 +26,15 @@ export const useAuth = () => {
           // Explicitly update state to ensure re-render
           setUser((prevUser: any | null) => {
             // Only update if the user data has actually changed
-            if (JSON.stringify(prevUser) !== JSON.stringify(parsedUser.user)) {
-              return parsedUser.user;
+            if (prevUser === null || JSON.stringify(prevUser) !== JSON.stringify(parsedUser.user)) {
+              return {
+                ...prevUser,
+                ...parsedUser.user,
+                user_metadata: {
+                  ...prevUser?.user_metadata,
+                  ...parsedUser.user.user_metadata,
+                },
+              }; // Merge user objects
             }
             return prevUser;
           });

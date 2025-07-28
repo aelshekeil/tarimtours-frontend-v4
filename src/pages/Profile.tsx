@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import strapiAPI from '../services/api';
+import supabaseAPI from '../services/supabaseAPI';
 import { useTranslation } from 'react-i18next';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import Edit3 from 'lucide-react/dist/esm/icons/edit-3';
@@ -21,7 +21,9 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      setName(user.username || '');
+      const firstName = user.user_metadata?.first_name || '';
+      const lastName = user.user_metadata?.last_name || '';
+      setName(firstName + ' ' + lastName);
       setEmail(user.email || '');
     }
   }, [user]);
@@ -32,13 +34,27 @@ const Profile: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await strapiAPI.updateProfile(user.id, { username: name });
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      await supabaseAPI.updateProfile(user.id, { 
+        first_name: firstName, 
+        last_name: lastName, 
+        email: user.email 
+      });
+      
       setSuccess(t('profile.profile_updated_successfully'));
 
+      // Update local storage with new user metadata
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
-        parsedUser.user.username = name;
+        parsedUser.user.user_metadata = { 
+          ...parsedUser.user.user_metadata, 
+          first_name: firstName, 
+          last_name: lastName 
+        };
         localStorage.setItem('user', JSON.stringify(parsedUser));
         window.dispatchEvent(new Event('authChange'));
       }
@@ -50,6 +66,7 @@ const Profile: React.FC = () => {
       }
 
     } catch (err) {
+      console.error('Profile update error:', err);
       setError(t('profile.failed_to_update_profile'));
     } finally {
       setLoading(false);
@@ -66,7 +83,7 @@ const Profile: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await strapiAPI.changePassword({
+      await supabaseAPI.changePassword({
         currentPassword,
         password: newPassword,
         passwordConfirmation: confirmPassword,

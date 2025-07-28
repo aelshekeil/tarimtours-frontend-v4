@@ -5,6 +5,7 @@ import FileUp from 'lucide-react/dist/esm/icons/file-up';
 import FileCheck from 'lucide-react/dist/esm/icons/file-check';
 import FileX from 'lucide-react/dist/esm/icons/file-x';
 import PlusCircle from 'lucide-react/dist/esm/icons/plus-circle';
+import { sanitizeFilename } from '@/utils/helpers';
 
 interface MultiFileDropzoneProps {
   onFileChange: (files: File[]) => void;
@@ -23,8 +24,12 @@ const MultiFileDropzone: React.FC<MultiFileDropzoneProps> = ({ onFileChange, lab
       setError(t('common.dropzone.file_rejected'));
       return;
     }
-    if (acceptedFiles.length > 0) {
-      const newFiles = [...files, ...acceptedFiles];
+if (acceptedFiles.length > 0) {
+      const sanitizedFiles = acceptedFiles.map(file => {
+        const cleanName = `${Date.now()}_${sanitizeFilename(file.name)}`;
+        return new File([file], cleanName, { type: file.type });
+      });
+      const newFiles = [...files, ...sanitizedFiles];
       setFiles(newFiles);
       onFileChange(newFiles);
       acceptedFiles.forEach(file => {
