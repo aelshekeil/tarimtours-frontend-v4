@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analytics Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Analytics Data Test</h1>
+    <div id="results"></div>
+
+    <script type="module">
+        // Initialize Supabase client
+        const supabaseUrl = 'https://vrvrhzseqnjpriqesgoj.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZydnJoenNlcW5qcHJpcWVzZ29qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNjA4OTAsImV4cCI6MjA2NzczNjg5MH0.1D9ES2hGCgC8726b9HNiPNoQF1SYxHYjTezUGshMFNM';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function testAnalytics() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing analytics connection...</p>';
+
+            try {
+                // Test connection by querying user count
+                const { count, error: countError } = await supabase
+                    .from('profiles')
+                    .select('*', { count: 'exact', head: true });
+
+                if (countError) {
+                    resultsDiv.innerHTML += `<p>Error getting user count: ${countError.message}</p>`;
+                    return;
+                }
+
+                resultsDiv.innerHTML += `<p>Total users: ${count}</p>`;
+
+                // Test analytics tables
+                const { data: analyticsData, error: analyticsError } = await supabase
+                    .from('user_analytics')
+                    .select('*')
+                    .limit(5);
+
+                if (analyticsError) {
+                    resultsDiv.innerHTML += `<p>Error querying user_analytics: ${analyticsError.message}</p>`;
+                    return;
+                }
+
+                resultsDiv.innerHTML += `<p>User analytics records: ${analyticsData.length}</p>`;
+                if (analyticsData.length > 0) {
+                    resultsDiv.innerHTML += '<pre>' + JSON.stringify(analyticsData, null, 2) + '</pre>';
+                }
+
+                // Test page analytics
+                const { data: pageData, error: pageError } = await supabase
+                    .from('page_analytics')
+                    .select('*')
+                    .limit(5);
+
+                if (pageError) {
+                    resultsDiv.innerHTML += `<p>Error querying page_analytics: ${pageError.message}</p>`;
+                    return;
+                }
+
+                resultsDiv.innerHTML += `<p>Page analytics records: ${pageData.length}</p>`;
+                if (pageData.length > 0) {
+                    resultsDiv.innerHTML += '<pre>' + JSON.stringify(pageData, null, 2) + '</pre>';
+                }
+
+                // Test system logs
+                const { data: logData, error: logError } = await supabase
+                    .from('system_logs')
+                    .select('*')
+                    .limit(5);
+
+                if (logError) {
+                    resultsDiv.innerHTML += `<p>Error querying system_logs: ${logError.message}</p>`;
+                    return;
+                }
+
+                resultsDiv.innerHTML += `<p>System log records: ${logData.length}</p>`;
+                if (logData.length > 0) {
+                    resultsDiv.innerHTML += '<pre>' + JSON.stringify(logData, null, 2) + '</pre>';
+                }
+
+            } catch (error) {
+                resultsDiv.innerHTML += `<p>Unexpected error: ${error.message}</p>`;
+            }
+        }
+
+        testAnalytics();
+    </script>
+</body>
+</html>

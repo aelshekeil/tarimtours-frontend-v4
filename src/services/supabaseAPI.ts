@@ -337,6 +337,104 @@ async updateTravelPackage(id: string, pkg: any) {
     return true;
   }
 
+  async createTravelPackageBooking(bookingData: {
+    packageId: string;
+    packageName: string;
+    packagePrice: number;
+    quantity: number;
+    customerName: string;
+    customerEmail: string;
+    customerPhone?: string;
+    travelDate?: string;
+    numberOfTravelers?: number;
+    specialRequests?: string;
+  }): Promise<any> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User must be authenticated to book a package');
+    }
+
+    const totalAmount = bookingData.packagePrice * bookingData.quantity;
+
+    const { data, error } = await supabase
+      .from('travel_package_bookings')
+      .insert({
+        user_id: user.id,
+        package_id: bookingData.packageId,
+        package_name: bookingData.packageName,
+        package_price: bookingData.packagePrice,
+        quantity: bookingData.quantity,
+        total_amount: totalAmount,
+        customer_name: bookingData.customerName,
+        customer_email: bookingData.customerEmail,
+        customer_phone: bookingData.customerPhone,
+        travel_date: bookingData.travelDate,
+        number_of_travelers: bookingData.numberOfTravelers || 1,
+        special_requests: bookingData.specialRequests,
+        status: 'pending',
+        payment_status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  async getTravelPackageBookings(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('travel_package_bookings')
+      .select('*, travel_packages(*)')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data || [];
+  }
+
+  async updateTravelPackageBookingStatus(id: string, status: string, paymentStatus?: string): Promise<any> {
+    const updateData: any = {
+      status,
+      updated_at: new Date().toISOString()
+    };
+    
+    if (paymentStatus) {
+      updateData.payment_status = paymentStatus;
+    }
+
+    const { data, error } = await supabase
+      .from('travel_package_bookings')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  async deleteTravelPackageBooking(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('travel_package_bookings')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return true;
+  }
+
   async getESIMProducts(): Promise<any[]> {
     const { data, error } = await supabase.from('eSIM').select('*');
 
@@ -676,6 +774,298 @@ async updateTravelPackage(id: string, pkg: any) {
     return {
       id: Date.now(), // Generate a simple ID
       url: publicUrl,
+    };
+  }
+
+  // Education Consultation Methods
+  async submitEducationConsultation(consultationData: {
+    name: string;
+    email: string;
+    phone: string;
+    message?: string;
+    serviceType: 'malaysia' | 'tarim';
+  }): Promise<any> {
+    const { data, error } = await supabase
+      .from('education_consultations')
+      .insert({
+        full_name: consultationData.name,
+        email: consultationData.email,
+        phone: consultationData.phone,
+        message: consultationData.message || '',
+        service_type: consultationData.serviceType,
+        status: 'new'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    // Also add to newsletter subscribers if not already exists
+    await this.addNewsletterSubscriber(consultationData.email);
+
+    return data;
+  }
+
+  // Business Incorporation Consultation Methods
+  async submitBusinessConsultation(consultationData: {
+    name: string;
+    email: string;
+    phone: string;
+    message?: string;
+    serviceType: 'business-incorporation';
+    preferredCountry?: string;
+    businessType?: string;
+  }): Promise<any> {
+    const { data, error } = await supabase
+      .from('business_incorporation_consultations')
+      .insert({
+        full_name: consultationData.name,
+        email: consultationData.email,
+        phone: consultationData.phone,
+        message: consultationData.message || '',
+        service_type: consultationData.serviceType,
+        preferred_country: consultationData.preferredCountry,
+        business_type: consultationData.businessType,
+        status: 'new'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    // Also add to newsletter subscribers if not already exists
+    await this.addNewsletterSubscriber(consultationData.email);
+
+    return data;
+  }
+
+  async getBusinessConsultations(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('business_incorporation_consultations')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data || [];
+  }
+
+  async updateBusinessConsultationStatus(id: string, status: string, notes?: string): Promise<any> {
+    const updateData: any = {
+      status,
+      updated_at: new Date().toISOString()
+    };
+    
+    if (notes !== undefined) {
+      updateData.notes = notes;
+    }
+
+    const { data, error } = await supabase
+      .from('business_incorporation_consultations')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  async deleteBusinessConsultation(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('business_incorporation_consultations')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return true;
+  }
+
+  async getEducationConsultations(serviceType?: 'malaysia' | 'tarim'): Promise<any[]> {
+    let query = supabase
+      .from('education_consultations')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (serviceType) {
+      query = query.eq('service_type', serviceType);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data || [];
+  }
+
+  async updateEducationConsultationStatus(id: string, status: string): Promise<any> {
+    const { data, error } = await supabase
+      .from('education_consultations')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  // Newsletter subscription methods
+  async addNewsletterSubscriber(email: string): Promise<any> {
+    // Check if email already exists
+    const { data: existing } = await supabase
+      .from('newsletter_subscribers')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (existing) {
+      return existing; // Already subscribed
+    }
+
+    const { data, error } = await supabase
+      .from('newsletter_subscribers')
+      .insert({
+        email: email,
+        status: 'active'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      // Ignore duplicate email errors
+      if (error.code === '23505') {
+        return null;
+      }
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  async getNewsletterSubscribers(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('newsletter_subscribers')
+      .select('*')
+      .eq('status', 'active')
+      .order('subscribed_at', { ascending: false });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data || [];
+  }
+
+  // User Profile Service Methods
+  async getUserApplications(userId: string): Promise<{
+    visaApplications: any[];
+    drivingLicenseApplications: any[];
+    educationConsultations: any[];
+    travelPackageBookings: any[];
+  }> {
+    // Fetch visa applications
+    const { data: visaApps, error: visaError } = await supabase
+      .from('visa_applications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (visaError) {
+      console.error('Error fetching visa applications:', visaError);
+    }
+
+    // Fetch driving license applications
+    const { data: drivingApps, error: drivingError } = await supabase
+      .from('international_driving_license_applications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (drivingError) {
+      console.error('Error fetching driving license applications:', drivingError);
+    }
+
+    // Fetch education consultations
+    const { data: eduConsultations, error: eduError } = await supabase
+      .from('education_consultations')
+      .select('*')
+      .eq('email', (await supabase.auth.getUser()).data.user?.email)
+      .order('created_at', { ascending: false });
+
+    if (eduError) {
+      console.error('Error fetching education consultations:', eduError);
+    }
+
+    // Fetch travel package bookings
+    const { data: travelBookings, error: travelError } = await supabase
+      .from('travel_package_bookings')
+      .select('*, travel_packages(*)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (travelError) {
+      console.error('Error fetching travel bookings:', travelError);
+    }
+
+    return {
+      visaApplications: visaApps || [],
+      drivingLicenseApplications: drivingApps || [],
+      educationConsultations: eduConsultations || [],
+      travelPackageBookings: travelBookings || []
+    };
+  }
+
+  async getUserStatistics(userId: string): Promise<{
+    totalApplications: number;
+    pendingApplications: number;
+    completedApplications: number;
+    totalSpent: number;
+  }> {
+    const applications = await this.getUserApplications(userId);
+    
+    const totalApplications =
+      applications.visaApplications.length +
+      applications.drivingLicenseApplications.length +
+      applications.educationConsultations.length +
+      applications.travelPackageBookings.length;
+
+    const pendingApplications =
+      applications.visaApplications.filter(app => app.status === 'pending' || app.status === 'processing').length +
+      applications.drivingLicenseApplications.filter(app => app.status === 'pending' || app.status === 'processing').length +
+      applications.educationConsultations.filter(app => app.status === 'new' || app.status === 'in_progress').length;
+
+    const completedApplications =
+      applications.visaApplications.filter(app => app.status === 'approved' || app.status === 'completed').length +
+      applications.drivingLicenseApplications.filter(app => app.status === 'approved' || app.status === 'completed').length +
+      applications.educationConsultations.filter(app => app.status === 'completed').length;
+
+    const totalSpent = applications.travelPackageBookings.reduce((sum, booking) =>
+      sum + (booking.total_amount || 0), 0
+    );
+
+    return {
+      totalApplications,
+      pendingApplications,
+      completedApplications,
+      totalSpent
     };
   }
 }

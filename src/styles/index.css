@@ -130,6 +130,23 @@
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+.animate-glass-shine {
+  animation: glass-shine 3s ease-in-out infinite;
+}
+@keyframes glass-shine {
+  0% {
+    transform: translateX(-100%) skewX(-12deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-12deg);
+  }
+}
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+.animate-spin-slow {
+  animation: spin 3s linear infinite;
+}
 .shimmer-effect {
   position: relative;
   overflow: hidden;

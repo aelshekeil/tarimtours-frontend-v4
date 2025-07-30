@@ -3,25 +3,37 @@ import VisaOffersManager from "../components/admin/VisaOffersManager";
 import UsersManager from "../components/admin/UsersManager.tsx";
 import SubmissionsManager from "../components/admin/SubmissionsManager.tsx";
 import TravelPackagesManager from "../components/admin/TravelPackagesManager";
+import TravelPackageBookingsManager from "../components/admin/TravelPackageBookingsManager";
 import TravelAccessoriesManager from "../components/admin/TravelAccessoriesManager";
+import EducationConsultationsManager from "../components/admin/EducationConsultationsManager";
+import BusinessIncorporationManager from "../components/admin/BusinessIncorporationManager";
+import CMSManager from "../components/admin/CMSManager";
+import AnalyticsDashboard from "../components/admin/AnalyticsDashboard";
+import SettingsManager from "../components/admin/SettingsManager";
+import ReportsManager from "../components/admin/ReportsManager";
+import AdminTools from "../components/admin/AdminTools";
 
 import { useState } from "react";
 
 const SECTIONS = [
+  { key: "analytics", label: "Analytics Dashboard", component: <AnalyticsDashboard /> },
+  { key: "reports", label: "Reports", component: <ReportsManager /> },
+  { key: "cms", label: "Content Management", component: <CMSManager /> },
   { key: "visa", label: "Visa Offers", component: <VisaOffersManager /> },
   { key: "packages", label: "Travel Packages", component: <TravelPackagesManager /> },
+  { key: "bookings", label: "Package Bookings", component: <TravelPackageBookingsManager /> },
   { key: "accessories", label: "Travel Accessories", component: <TravelAccessoriesManager /> },
+  { key: "education", label: "Education Consultations", component: <EducationConsultationsManager /> },
+  { key: "business", label: "Business Incorporation", component: <BusinessIncorporationManager /> },
   { key: "users", label: "Admin Users", component: <UsersManager /> },
   { key: "submissions", label: "Submissions", component: <SubmissionsManager /> },
-  { key: "reports", label: "Reports (Coming Soon)", component: <div className="p-8 text-gray-400">Reports feature will be added here.</div> },
-  { key: "settings", label: "Settings (Coming Soon)", component: <div className="p-8 text-gray-400">Settings feature will be added here.</div> },
-  { key: "logs", label: "Logs (Coming Soon)", component: <div className="p-8 text-gray-400">Logs feature will be added here.</div> },
-  { key: "tools", label: "More Tools (Coming Soon)", component: <div className="p-8 text-gray-400">More tools will be added here.</div> },
+  { key: "settings", label: "Settings", component: <SettingsManager /> },
+  { key: "tools", label: "Admin Tools", component: <AdminTools /> },
 ];
 
 const AdminDashboard: React.FC = () => {
   // TODO: Add authentication/authorization check here
-  const [selected, setSelected] = useState("visa");
+  const [selected, setSelected] = useState("analytics");
 
   const selectedSection = SECTIONS.find((s) => s.key === selected);
 
@@ -54,25 +66,18 @@ const AdminDashboard: React.FC = () => {
             <h2 className="text-sm font-semibold mb-4 text-gray-500 uppercase tracking-wider">Navigation</h2>
             <ul className="space-y-1">
               {SECTIONS.map((section) => {
-                const isDisabled = section.key === "tools" || section.key === "reports" || section.key === "settings" || section.key === "logs";
                 return (
                   <li key={section.key}>
                     <button
                       className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors duration-200 ${
                         selected === section.key
                           ? "bg-blue-600 text-white font-medium shadow-sm"
-                          : isDisabled
-                          ? "text-gray-400 cursor-not-allowed"
                           : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                       }`}
                       onClick={() => setSelected(section.key)}
-                      disabled={isDisabled}
                     >
                       <div className="flex items-center justify-between">
                         <span>{section.label}</span>
-                        {isDisabled && (
-                          <span className="text-xs bg-gray-200 text-gray-500 px-2 py-1 rounded">Soon</span>
-                        )}
                       </div>
                     </button>
                   </li>

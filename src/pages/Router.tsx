@@ -20,7 +20,7 @@ const Profile = lazy(() => import('./Profile'));
 // New components we'll create
 const EnhancedESIMShop = lazy(() => import('./EnhancedESIMShop'));
 const TravelAccessories = lazy(() => import('./Travelaccessories'));
-const EnhancedTravelPackages = lazy(() => import('./EnhancedTravelPackages'));
+const EnhancedTravelPackages = lazy(() => import('./ModernTravelPackages'));
 const VisaServices = lazy(() => import('./VisaServices'));
 import ErrorBoundary from '../components/common/ErrorBoundary';
 /* Removed VisaServiceSelection and DrivingLicenseServices lazy imports */
@@ -30,6 +30,10 @@ const Checkout = lazy(() => import('./Checkout'));
 const VisaApplicationForm = lazy(() => import('./VisaApplicationForm'));
 const InternationalDrivingLicense = lazy(() => import('./InternationalDrivingLicense'));
 const AdminDashboard = lazy(() => import('./AdminDashboard'));
+const MalaysiaEducation = lazy(() => import('./MalaysiaEducation'));
+const TarimEducation = lazy(() => import('./TarimEducation'));
+const DynamicPage = lazy(() => import('../components/DynamicPage'));
+const CMSPagesList = lazy(() => import('./CMSPagesList'));
 
 const Home: FC = () => {
   const { t } = useTranslation();
@@ -154,6 +158,73 @@ const RouterComponent: FC<RouterComponentProps> = ({
       <Route path="/admin" element={
         <Suspense fallback={<div>Loading...</div>}>
           <AdminDashboard />
+        </Suspense>
+      } />
+      <Route path="/education-malaysia" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <MalaysiaEducation />
+        </Suspense>
+      } />
+      <Route path="/education-tarim" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <TarimEducation />
+        </Suspense>
+      } />
+      
+      {/* CMS Pages List */}
+      <Route path="/pages" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <CMSPagesList />
+        </Suspense>
+      } />
+      
+      {/* CMS Dynamic Pages Routes */}
+      <Route path="/page/:slug" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <DynamicPage />
+        </Suspense>
+      } />
+      
+      {/* Specific CMS Page Type Routes */}
+      <Route path="/study/:slug" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <DynamicPage />
+        </Suspense>
+      } />
+      
+      <Route path="/packages/:slug" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <DynamicPage />
+        </Suspense>
+      } />
+      
+      <Route path="/faq/:slug" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <DynamicPage />
+        </Suspense>
+      } />
+      
+      <Route path="/accessories/:slug" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <DynamicPage />
+        </Suspense>
+      } />
+      
+      <Route path="/esim/:slug" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <DynamicPage />
+        </Suspense>
+      } />
+      
+      <Route path="/visa/:slug" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <DynamicPage />
+        </Suspense>
+      } />
+      
+      <Route path="/education/:slug" element={
+        <Suspense fallback={<div>Loading...</div>}>
+          <DynamicPage />
         </Suspense>
       } />
     </Routes>

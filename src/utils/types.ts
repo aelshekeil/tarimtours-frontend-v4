@@ -230,13 +230,15 @@ export interface ESIMProductSimple {
 
 export interface CartItem {
   id: string;
-  product_type: 'esim' | 'accessory' | 'travel-accessory';
-  product_id: number;
+  product_type: 'esim' | 'accessory' | 'travel-accessory' | 'travel-package';
+  product_id?: number;
   name: string;
   quantity: number;
   price: number;
   product_details?: ProductDetails;
   image_url?: string;
+  image?: string;
+  description?: string;
 }
 
 export interface VisaOffer {

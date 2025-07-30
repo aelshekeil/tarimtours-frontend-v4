@@ -4,6 +4,7 @@ import { Menu, X, User, ShoppingCart, Globe, ChevronDown, LogOut, UserCircle } f
 import { useTranslation } from 'react-i18next';
 import { useCart } from "../../hooks/useCart";
 import CartSidebar from "../common/CartSidebar";
+import SearchBar from "../SearchBar";
 import useMobile from "../../hooks/use-mobile";
 
 // Define the props interface for the Header component
@@ -18,8 +19,10 @@ const Header: FC<HeaderProps> = ({ user, onAuthClick, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isShopMenuOpen, setIsShopMenuOpen] = useState(false);
   const [isServicesMenuOpen, setIsServicesMenuOpen] = useState(false);
+  const [isEducationMenuOpen, setIsEducationMenuOpen] = useState(false);
   const [isMobileShopOpen, setIsMobileShopOpen] = useState(false);
   const [isMobileServicesOpen, setIsMobileServicesOpen] = useState(false);
+  const [isMobileEducationOpen, setIsMobileEducationOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { getTotalItems } = useCart();
@@ -38,6 +41,7 @@ const Header: FC<HeaderProps> = ({ user, onAuthClick, onLogout }) => {
     setIsMenuOpen(false);
     setIsShopMenuOpen(false);
     setIsServicesMenuOpen(false);
+    setIsEducationMenuOpen(false);
     setIsUserMenuOpen(false);
   };
 
@@ -236,6 +240,57 @@ const Header: FC<HeaderProps> = ({ user, onAuthClick, onLogout }) => {
                 )}
               </div>
 
+              {/* Education Dropdown */}
+              <div className="relative group">
+                <button
+                  onMouseEnter={() => setIsEducationMenuOpen(true)}
+                  onMouseLeave={() => setIsEducationMenuOpen(false)}
+                  className={`font-medium transition-all duration-300 flex items-center py-2 px-3 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 rounded-lg ${
+                    location.pathname.startsWith('/education-malaysia') || location.pathname.startsWith('/education-tarim')
+                      ? 'text-blue-600' : 'text-gray-800'
+                  }`}
+                >
+                  {t("common.education_services")}
+                  <ChevronDown className={`${i18n.language === 'ar' ? 'mr-2' : 'ml-2'} h-4 w-4 transition-transform duration-300 ${
+                    isEducationMenuOpen ? 'rotate-180' : ''
+                  }`} />
+                </button>
+
+                {isEducationMenuOpen && (
+                  <div
+                    className={`absolute top-full ${i18n.language === 'ar' ? 'right-0' : 'left-0'} mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-100 py-3 z-50`}
+                    onMouseEnter={() => setIsEducationMenuOpen(true)}
+                    onMouseLeave={() => setIsEducationMenuOpen(false)}
+                  >
+                    <div className="px-4 py-2">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">{t("common.education_services")}</h3>
+                    </div>
+                    <Link
+                      to="/education-malaysia"
+                      className={`block w-full ${i18n.language === 'ar' ? 'text-right' : 'text-left'} px-5 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all duration-300 group border-l-3 border-transparent hover:border-blue-500`}
+                      onClick={handleCloseMenus}
+                    >
+                      <div className="font-medium flex items-center">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-3 transition-all duration-300"></div>
+                        {t("common.malaysia_education")}
+                      </div>
+                      <div className="text-sm text-gray-500 ml-5 mt-1">{t("common.study_abroad")}</div>
+                    </Link>
+                    <Link
+                      to="/education-tarim"
+                      className={`block w-full ${i18n.language === 'ar' ? 'text-right' : 'text-left'} px-5 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all duration-300 group border-l-3 border-transparent hover:border-blue-500`}
+                      onClick={handleCloseMenus}
+                    >
+                      <div className="font-medium flex items-center">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-3 transition-all duration-300"></div>
+                        {t("common.tarim_education")}
+                      </div>
+                      <div className="text-sm text-gray-500 ml-5 mt-1">{t("common.study_abroad")}</div>
+                    </Link>
+                  </div>
+                )}
+              </div>
+
               <Link to="/application-tracking" className={`${getLinkClass('/application-tracking')} py-2 px-3`}>
                 {t("common.track_application")}
                 <span className={getActiveLinkUnderline('/application-tracking')}></span>
@@ -252,6 +307,9 @@ const Header: FC<HeaderProps> = ({ user, onAuthClick, onLogout }) => {
             
             {/* Desktop Right Section */}
             <div className="hidden lg:flex items-center space-x-5">
+              {/* Search Bar */}
+              <SearchBar />
+              
               {/* Language Switcher */}
               <div className="flex items-center space-x-1 bg-gray-100 rounded-full p-1 border border-gray-200">
                 <button
@@ -341,6 +399,8 @@ const Header: FC<HeaderProps> = ({ user, onAuthClick, onLogout }) => {
 
             {/* Mobile Menu Button */}
             <div className="flex lg:hidden items-center space-x-3">
+              <SearchBar />
+              
               <button
                 onClick={() => setIsCartOpen(true)}
                 className="relative p-2 text-gray-700 rounded-full"
@@ -461,6 +521,44 @@ const Header: FC<HeaderProps> = ({ user, onAuthClick, onLogout }) => {
                         <div className="flex items-center">
                           <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-3"></div>
                           {t("common.business_incorporation")}
+                        </div>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
+                {/* Education Section */}
+                <div className="py-2">
+                  <button
+                    onClick={() => setIsMobileEducationOpen(!isMobileEducationOpen)}
+                    className={`w-full flex items-center justify-between py-3 text-gray-900 font-medium hover:bg-blue-50 rounded-lg transition-all duration-300 px-5`}
+                  >
+                    <div className="flex items-center">
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-3"></div>
+                      {t("common.education_services")}
+                    </div>
+                    <ChevronDown className={`h-5 w-5 transition-transform ${isMobileEducationOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {isMobileEducationOpen && (
+                    <div className="space-y-1 pt-2 pl-8">
+                      <Link
+                        to="/education-malaysia"
+                        className={`block w-full ${i18n.language === 'ar' ? 'text-right' : 'text-left'} px-5 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all duration-300`}
+                        onClick={handleCloseMenus}
+                      >
+                        <div className="flex items-center">
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-3"></div>
+                          {t("common.malaysia_education")}
+                        </div>
+                      </Link>
+                      <Link
+                        to="/education-tarim"
+                        className={`block w-full ${i18n.language === 'ar' ? 'text-right' : 'text-left'} px-5 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all duration-300`}
+                        onClick={handleCloseMenus}
+                      >
+                        <div className="flex items-center">
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-3"></div>
+                          {t("common.tarim_education")}
                         </div>
                       </Link>
                     </div>

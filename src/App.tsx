@@ -5,6 +5,7 @@ import AuthModal from './components/common/AuthModal';
 import RouterComponent from './pages/Router';
 import { DrivingLicenseService } from './components/DrivingLicenseServices.tsx';
 import { CartProvider } from './components/common/CartProvider';
+import { AnalyticsProvider } from './components/AnalyticsProvider';
 
 function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -32,34 +33,36 @@ function App() {
   };
 
   return (
-    <CartProvider>
-      <div className="min-h-screen bg-gray-50">
-        <Header
-          user={user}
-          onAuthClick={() => setShowAuthModal(true)}
-          onLogout={handleLogout}
-        />
-        
-        <main className="pt-16 lg:pt-20">
-          <RouterComponent
-            handleDrivingLicenseServiceSelection={handleDrivingLicenseServiceSelection}
+    <AnalyticsProvider>
+      <CartProvider>
+        <div className="min-h-screen bg-gray-50">
+          <Header
+            user={user}
+            onAuthClick={() => setShowAuthModal(true)}
+            onLogout={handleLogout}
           />
-        </main>
+          
+          <main className="pt-16 lg:pt-20">
+            <RouterComponent
+              handleDrivingLicenseServiceSelection={handleDrivingLicenseServiceSelection}
+            />
+          </main>
 
-        <Footer />
+          <Footer />
 
-        {showAuthModal && (
-          <AuthModal
-            isOpen={showAuthModal}
-            onClose={() => setShowAuthModal(false)}
-            onLoginSuccess={(user) => {
-              setUser(user);
-              setShowAuthModal(false);
-            }}
-          />
-        )}
-      </div>
-    </CartProvider>
+          {showAuthModal && (
+            <AuthModal
+              isOpen={showAuthModal}
+              onClose={() => setShowAuthModal(false)}
+              onLoginSuccess={(user) => {
+                setUser(user);
+                setShowAuthModal(false);
+              }}
+            />
+          )}
+        </div>
+      </CartProvider>
+    </AnalyticsProvider>
   );
 }
 

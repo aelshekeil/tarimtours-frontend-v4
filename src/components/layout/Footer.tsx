@@ -96,41 +96,41 @@ const Footer: React.FC = () => {
               </ul>
             </div>
 
-            {/* Quick Links */}
+            {/* Resources */}
             <div className="group">
               <h4 className="text-xl font-semibold mb-6 text-white relative">
-                {t('common.quick_links_title')}
+                {t('common.resources')}
                 <div className="absolute -bottom-2 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-400 to-teal-400 group-hover:w-full transition-all duration-300"></div>
               </h4>
               <ul className="space-y-3">
                 <li>
-                  <a href="#" className="text-gray-300 hover:text-blue-400 transition-all duration-300 flex items-center group/link">
+                  <a href="/pages" className="text-gray-300 hover:text-blue-400 transition-all duration-300 flex items-center group/link">
                     <span className="w-2 h-2 bg-blue-400 rounded-full mr-3 opacity-0 group-hover/link:opacity-100 transition-opacity duration-300"></span>
-                    <span className="group-hover/link:translate-x-1 transition-transform duration-300">{t('common.about_us_link')}</span>
+                    <span className="group-hover/link:translate-x-1 transition-transform duration-300">{t('common.all_resources')}</span>
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-gray-300 hover:text-blue-400 transition-all duration-300 flex items-center group/link">
+                  <a href="/study" className="text-gray-300 hover:text-blue-400 transition-all duration-300 flex items-center group/link">
+                    <span className="w-2 h-2 bg-blue-400 rounded-full mr-3 opacity-0 group-hover/link:opacity-100 transition-opacity duration-300"></span>
+                    <span className="group-hover/link:translate-x-1 transition-transform duration-300">{t('common.study_guides')}</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="/faq" className="text-gray-300 hover:text-blue-400 transition-all duration-300 flex items-center group/link">
+                    <span className="w-2 h-2 bg-blue-400 rounded-full mr-3 opacity-0 group-hover/link:opacity-100 transition-opacity duration-300"></span>
+                    <span className="group-hover/link:translate-x-1 transition-transform duration-300">{t('common.faqs')}</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="/visa" className="text-gray-300 hover:text-blue-400 transition-all duration-300 flex items-center group/link">
+                    <span className="w-2 h-2 bg-blue-400 rounded-full mr-3 opacity-0 group-hover/link:opacity-100 transition-opacity duration-300"></span>
+                    <span className="group-hover/link:translate-x-1 transition-transform duration-300">{t('common.visa_guides')}</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="/application-tracking" className="text-gray-300 hover:text-blue-400 transition-all duration-300 flex items-center group/link">
                     <span className="w-2 h-2 bg-blue-400 rounded-full mr-3 opacity-0 group-hover/link:opacity-100 transition-opacity duration-300"></span>
                     <span className="group-hover/link:translate-x-1 transition-transform duration-300">{t('common.track_application_link')}</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-300 hover:text-blue-400 transition-all duration-300 flex items-center group/link">
-                    <span className="w-2 h-2 bg-blue-400 rounded-full mr-3 opacity-0 group-hover/link:opacity-100 transition-opacity duration-300"></span>
-                    <span className="group-hover/link:translate-x-1 transition-transform duration-300">{t('common.faq_link')}</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-300 hover:text-blue-400 transition-all duration-300 flex items-center group/link">
-                    <span className="w-2 h-2 bg-blue-400 rounded-full mr-3 opacity-0 group-hover/link:opacity-100 transition-opacity duration-300"></span>
-                    <span className="group-hover/link:translate-x-1 transition-transform duration-300">{t('common.terms_conditions_link')}</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-300 hover:text-blue-400 transition-all duration-300 flex items-center group/link">
-                    <span className="w-2 h-2 bg-blue-400 rounded-full mr-3 opacity-0 group-hover/link:opacity-100 transition-opacity duration-300"></span>
-                    <span className="group-hover/link:translate-x-1 transition-transform duration-300">{t('common.privacy_policy_link')}</span>
                   </a>
                 </li>
               </ul>

@@ -1,10 +1,414 @@
-import { FC } from 'react';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  Building2,
+  FileText,
+  Calculator,
+  CreditCard,
+  CheckCircle,
+  ArrowRight,
+  Phone,
+  Mail,
+  User,
+  Globe,
+  Shield,
+  TrendingUp,
+  Clock,
+  MapPin
+} from 'lucide-react';
+import supabaseAPI from '../services/supabaseAPI';
 
-const BusinessIncorporation: FC = () => {
+const BusinessIncorporation: React.FC = () => {
+  const { t } = useTranslation();
+  const [isContactFormOpen, setIsContactFormOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    message: ''
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      await supabaseAPI.submitBusinessConsultation({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        message: formData.message,
+        serviceType: 'business-incorporation'
+      });
+
+      setSubmitSuccess(true);
+      setTimeout(() => {
+        setIsContactFormOpen(false);
+        setSubmitSuccess(false);
+        // Reset form
+        setFormData({ name: '', email: '', phone: '', message: '' });
+      }, 2000);
+    } catch (error) {
+      console.error('Error submitting consultation request:', error);
+      alert('Failed to submit consultation request. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const services = [
+    {
+      icon: <Building2 className="w-8 h-8" />,
+      title: t("business.incorporation.company_registration_title"),
+      description: t("business.incorporation.company_registration_description")
+    },
+    {
+      icon: <FileText className="w-8 h-8" />,
+      title: t("business.incorporation.legal_documentation_title"),
+      description: t("business.incorporation.legal_documentation_description")
+    },
+    {
+      icon: <Calculator className="w-8 h-8" />,
+      title: t("business.incorporation.tax_setup_title"),
+      description: t("business.incorporation.tax_setup_description")
+    },
+    {
+      icon: <CreditCard className="w-8 h-8" />,
+      title: t("business.incorporation.banking_assistance_title"),
+      description: t("business.incorporation.banking_assistance_description")
+    }
+  ];
+
+  const countries = [
+    {
+      icon: <Globe className="w-6 h-6" />,
+      title: t("business.incorporation.indonesia"),
+      description: t("business.incorporation.indonesia_desc")
+    },
+    {
+      icon: <MapPin className="w-6 h-6" />,
+      title: t("business.incorporation.malaysia"),
+      description: t("business.incorporation.malaysia_desc")
+    },
+    {
+      icon: <TrendingUp className="w-6 h-6" />,
+      title: t("business.incorporation.singapore"),
+      description: t("business.incorporation.singapore_desc")
+    },
+    {
+      icon: <Shield className="w-6 h-6" />,
+      title: t("business.incorporation.uk"),
+      description: t("business.incorporation.uk_desc")
+    }
+  ];
+
   return (
-    <div className="container-custom py-20">
-      <h1 className="text-3xl font-bold">Business Incorporation</h1>
-      <p>Our Business Incorporation service is coming soon. Please check back later.</p>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50">
+      {/* Hero Section */}
+      <section className="relative pt-24 pb-16 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/10 to-blue-600/10"></div>
+        <div className="container-custom relative z-10">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center px-4 py-2 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium mb-6">
+              <Building2 className="w-4 h-4 mr-2" />
+              {t("common.business_incorporation")}
+            </div>
+            
+            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+              <span className="bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
+                {t("business.incorporation.title")}
+              </span>
+            </h1>
+            
+            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+              {t("business.incorporation.subtitle")}
+            </p>
+            
+            <p className="text-lg text-gray-500 mb-10 max-w-3xl mx-auto">
+              {t("business.incorporation.hero_description")}
+            </p>
+            
+            <button
+              onClick={() => setIsContactFormOpen(true)}
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+            >
+              {t("common.get_consultation")}
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </button>
+          </div>
+        </div>
+        
+        {/* Decorative Elements */}
+        <div className="absolute top-20 left-10 w-20 h-20 bg-indigo-200 rounded-full opacity-20 animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-32 h-32 bg-blue-200 rounded-full opacity-20 animate-pulse delay-1000"></div>
+      </section>
+
+      {/* Services Section */}
+      <section className="py-20 bg-white">
+        <div className="container-custom">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              {t("business.incorporation.services_title")}
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              {t("business.incorporation.services_subtitle")}
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {services.map((service, index) => (
+              <div
+                key={index}
+                className="group p-8 bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2"
+              >
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 p-3 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-xl group-hover:scale-110 transition-transform duration-300">
+                    {service.icon}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3 group-hover:text-indigo-600 transition-colors duration-300">
+                      {service.title}
+                    </h3>
+                    <p className="text-gray-600 leading-relaxed">
+                      {service.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Countries Section */}
+      <section className="py-20 bg-gradient-to-br from-indigo-50 to-blue-50">
+        <div className="container-custom">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              {t("business.incorporation.countries_title")}
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              {t("business.incorporation.countries_subtitle")}
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {countries.map((country, index) => (
+              <div
+                key={index}
+                className="group p-6 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-100"
+              >
+                <div className="flex flex-col items-center text-center">
+                  <div className="p-3 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-full mb-4 group-hover:scale-110 transition-transform duration-300">
+                    {country.icon}
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors duration-300">
+                    {country.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    {country.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="text-center mt-8">
+            <p className="text-gray-500 italic">
+              {t("business.incorporation.more_countries_coming")}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="py-16 bg-gradient-to-r from-indigo-600 to-blue-600 text-white">
+        <div className="container-custom">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
+            <div className="group">
+              <div className="text-4xl font-bold mb-2 group-hover:scale-110 transition-transform duration-300">
+                <Clock className="w-12 h-12 mx-auto mb-2" />
+              </div>
+              <div className="text-indigo-100">{t("business.incorporation.fast_processing")}</div>
+            </div>
+            <div className="group">
+              <div className="text-4xl font-bold mb-2 group-hover:scale-110 transition-transform duration-300">
+                <Shield className="w-12 h-12 mx-auto mb-2" />
+              </div>
+              <div className="text-indigo-100">{t("business.incorporation.legal_compliance")}</div>
+            </div>
+            <div className="group">
+              <div className="text-4xl font-bold mb-2 group-hover:scale-110 transition-transform duration-300">
+                <Globe className="w-12 h-12 mx-auto mb-2" />
+              </div>
+              <div className="text-indigo-100">{t("business.incorporation.international_expertise")}</div>
+            </div>
+            <div className="group">
+              <div className="text-4xl font-bold mb-2 group-hover:scale-110 transition-transform duration-300">
+                <TrendingUp className="w-12 h-12 mx-auto mb-2" />
+              </div>
+              <div className="text-indigo-100">{t("business.incorporation.growth_support")}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-white">
+        <div className="container-custom">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              {t("business.incorporation.cta_title")}
+            </h2>
+            <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+              {t("business.incorporation.cta_description")}
+            </p>
+            <button
+              onClick={() => setIsContactFormOpen(true)}
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+            >
+              {t("common.contact_consultant")}
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Form Modal */}
+      {isContactFormOpen && (
+        <div className="fixed inset-0 bg-gradient-to-br from-indigo-900/20 via-blue-900/30 to-indigo-800/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 transform transition-all duration-300 scale-100 shadow-2xl border border-indigo-100">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
+                  {t("business.incorporation.contact_form_title")}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {t("business.incorporation.contact_form_subtitle")}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsContactFormOpen(false)}
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-full transition-all duration-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {submitSuccess ? (
+              <div className="text-center py-8">
+                <div className="w-20 h-20 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-12 h-12 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-green-600 mb-2">
+                  {t("business.incorporation.request_submitted")}
+                </h3>
+                <p className="text-gray-600">
+                  {t("business.incorporation.request_submitted_message")}
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <User className="w-4 h-4 inline mr-2 text-indigo-500" />
+                    {t("common.full_name")}
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                    placeholder={t("business.incorporation.name_placeholder")}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <Mail className="w-4 h-4 inline mr-2 text-indigo-500" />
+                    {t("common.email")}
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                    placeholder={t("business.incorporation.email_placeholder")}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <Phone className="w-4 h-4 inline mr-2 text-indigo-500" />
+                    {t("common.phone")}
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                    placeholder={t("business.incorporation.phone_placeholder")}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <Building2 className="w-4 h-4 inline mr-2 text-indigo-500" />
+                    {t("business.incorporation.message_label")}
+                  </label>
+                  <textarea
+                    name="message"
+                    value={formData.message}
+                    onChange={handleInputChange}
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white resize-none"
+                    placeholder={t("business.incorporation.message_placeholder")}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-indigo-700 hover:to-blue-700 transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>{t("common.submitting")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{t("business.incorporation.submit_request")}</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
